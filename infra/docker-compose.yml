@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: mediscanflow-postgres
+    environment:
+      POSTGRES_DB: mediscanflow
+      POSTGRES_USER: mediscanflow
+      POSTGRES_PASSWORD: mediscanflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - mediscanflow-postgres-data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: mediscanflow-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: mediscanflow
+      RABBITMQ_DEFAULT_PASS: mediscanflow
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - mediscanflow-rabbitmq-data:/var/lib/rabbitmq
+
+  minio:
+    image: minio/minio
+    container_name: mediscanflow-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: mediscanflow
+      MINIO_ROOT_PASSWORD: mediscanflow123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - mediscanflow-minio-data:/data
+
+volumes:
+  mediscanflow-postgres-data:
+  mediscanflow-rabbitmq-data:
+  mediscanflow-minio-data:
