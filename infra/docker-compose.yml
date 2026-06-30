@@ -10,6 +10,11 @@ services:
       - "5432:5432"
     volumes:
       - mediscanflow-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mediscanflow -d mediscanflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -22,6 +27,11 @@ services:
       - "15672:15672"
     volumes:
       - mediscanflow-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   minio:
     image: minio/minio
@@ -35,6 +45,11 @@ services:
       - "9001:9001"
     volumes:
       - mediscanflow-minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   medical-platform-service:
     build:
@@ -61,9 +76,22 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
-      - rabbitmq
-      - minio
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://localhost:8080/api/actuator/health || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   ai-inference-service:
     build:
@@ -90,8 +118,10 @@ services:
     volumes:
       - ../services/ai-inference-service/models:/app/models:ro
     depends_on:
-      - rabbitmq
-      - minio
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
 
 volumes:
   mediscanflow-postgres-data:
