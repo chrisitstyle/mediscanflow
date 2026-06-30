@@ -36,6 +36,7 @@ app:
   storage:
     minio:
       endpoint: http://localhost:9000
+      public-endpoint: http://localhost:9000
       access-key: mediscanflow
       secret-key: mediscanflow123
       bucket: medical-scans

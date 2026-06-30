@@ -36,6 +36,34 @@ services:
     volumes:
       - mediscanflow-minio-data:/data
 
+  medical-platform-service:
+    build:
+      context: ../services/medical-platform-service
+      dockerfile: Dockerfile
+    container_name: mediscanflow-medical-platform-service
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediscanflow
+      SPRING_DATASOURCE_USERNAME: mediscanflow
+      SPRING_DATASOURCE_PASSWORD: mediscanflow
+
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: mediscanflow
+      SPRING_RABBITMQ_PASSWORD: mediscanflow
+
+      APP_STORAGE_MINIO_ENDPOINT: http://minio:9000
+      APP_STORAGE_MINIO_PUBLIC_ENDPOINT: http://localhost:9000
+      APP_STORAGE_MINIO_ACCESS_KEY: mediscanflow
+      APP_STORAGE_MINIO_SECRET_KEY: mediscanflow123
+      APP_STORAGE_MINIO_BUCKET: medical-scans
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - rabbitmq
+      - minio
+
   ai-inference-service:
     build:
       context: ../services/ai-inference-service

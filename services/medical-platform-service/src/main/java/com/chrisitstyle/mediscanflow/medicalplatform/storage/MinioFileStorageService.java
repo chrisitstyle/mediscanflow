@@ -1,31 +1,42 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.storage;
 
 import io.minio.*;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.concurrent.TimeUnit;
 
 @Service
-@RequiredArgsConstructor
 class MinioFileStorageService implements FileStorageService {
 
-    private final MinioClient minioClient;
+    private final MinioClient internalMinioClient;
+    private final MinioClient publicMinioClient;
     private final MinioProperties properties;
+
+    MinioFileStorageService(
+            @Qualifier("internalMinioClient") MinioClient internalMinioClient,
+            @Qualifier("publicMinioClient") MinioClient publicMinioClient,
+            MinioProperties properties
+    ) {
+        this.internalMinioClient = internalMinioClient;
+        this.publicMinioClient = publicMinioClient;
+        this.properties = properties;
+    }
 
     @Override
     public void upload(String objectKey, MultipartFile file) {
         try {
             ensureBucketExists();
 
-            minioClient.putObject(PutObjectArgs.builder()
-                    .bucket(properties.bucket())
-                    .object(objectKey)
-                    .stream(file.getInputStream(),
-                            file.getSize(), (long) -1)
-                    .contentType(file.getContentType())
-                    .build());
+            internalMinioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(properties.bucket())
+                            .object(objectKey)
+                            .stream(file.getInputStream(), file.getSize(), (long) -1)
+                            .contentType(file.getContentType())
+                            .build()
+            );
         } catch (Exception exception) {
             throw new IllegalStateException("Could not upload file to MinIO", exception);
         }
@@ -34,7 +45,7 @@ class MinioFileStorageService implements FileStorageService {
     @Override
     public String generatePresignedUrl(String objectKey) {
         try {
-            return minioClient.getPresignedObjectUrl(
+            return publicMinioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Http.Method.GET)
                             .bucket(properties.bucket())
@@ -43,19 +54,26 @@ class MinioFileStorageService implements FileStorageService {
                             .build()
             );
         } catch (Exception exception) {
-            throw new IllegalStateException("Could not generate presigned URL for object: " + objectKey, exception);
+            throw new IllegalStateException(
+                    "Could not generate presigned URL for object: " + objectKey,
+                    exception
+            );
         }
     }
 
     private void ensureBucketExists() throws Exception {
-        boolean exists = minioClient.bucketExists(BucketExistsArgs.builder()
-                .bucket(properties.bucket())
-                .build());
+        boolean exists = internalMinioClient.bucketExists(
+                BucketExistsArgs.builder()
+                        .bucket(properties.bucket())
+                        .build()
+        );
 
         if (!exists) {
-            minioClient.makeBucket(MakeBucketArgs.builder()
-                    .bucket(properties.bucket())
-                    .build());
+            internalMinioClient.makeBucket(
+                    MakeBucketArgs.builder()
+                            .bucket(properties.bucket())
+                            .build()
+            );
         }
     }
 }
