@@ -34,6 +34,20 @@ def download_input_file(
     return temp_file_path
 
 
+def upload_result_file(
+    minio_client: Minio,
+    settings: MinioSettings,
+    object_key: str,
+    file_path: str,
+) -> None:
+    minio_client.fput_object(
+        bucket_name=settings.bucket,
+        object_name=object_key,
+        file_path=file_path,
+        content_type="image/jpeg",
+    )
+
+
 def delete_file_if_exists(file_path: str | None) -> None:
     if file_path and os.path.exists(file_path):
         os.remove(file_path)

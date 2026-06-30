@@ -7,6 +7,7 @@ public record AnalysisCompletedPayload(
         UUID analysisId,
         String modelName,
         String modelVersion,
+        String resultObjectKey,
         List<AnalysisDetectionPayload> detections
 ) {
 }

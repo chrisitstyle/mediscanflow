@@ -16,7 +16,12 @@ from messaging import (
     create_rabbitmq_connection,
     publish_event,
 )
-from storage import create_minio_client, delete_file_if_exists, download_input_file
+from storage import (
+    create_minio_client,
+    delete_file_if_exists,
+    download_input_file,
+    upload_result_file,
+)
 
 
 def handle_message(
@@ -36,6 +41,7 @@ def handle_message(
     object_key = payload["objectKey"]
 
     input_file_path = None
+    result_file_path = None
 
     print(f"Received AnalysisRequested event for analysisId={analysis_id}")
     print(f"Downloading input file from MinIO: objectKey={object_key}")
@@ -53,14 +59,26 @@ def handle_message(
         print(f"Downloaded input file to: {input_file_path}")
         print(f"Running YOLO inference for analysisId={analysis_id}")
 
-        detections = run_yolo_inference(
+        detections, result_file_path = run_yolo_inference(
             model=model,
             image_path=input_file_path,
             settings=model_settings,
         )
 
+        result_object_key = f"analyses/{analysis_id}/result.jpg"
+
+        upload_result_file(
+            minio_client=minio_client,
+            settings=minio_settings,
+            object_key=result_object_key,
+            file_path=result_file_path,
+        )
+
+        print(f"Uploaded result image to MinIO: objectKey={result_object_key}")
+
         completed_event = build_completed_event(
             requested_event=requested_event,
+            result_object_key=result_object_key,
             detections=detections,
         )
 
@@ -100,9 +118,13 @@ def handle_message(
 
     finally:
         delete_file_if_exists(input_file_path)
+        delete_file_if_exists(result_file_path)
 
         if input_file_path:
             print(f"Deleted temporary input file: {input_file_path}")
+
+        if result_file_path:
+            print(f"Deleted temporary result file: {result_file_path}")
 
 
 def main() -> None:

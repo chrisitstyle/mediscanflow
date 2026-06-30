@@ -1,5 +1,7 @@
 import os
+import tempfile
 
+import cv2
 from config import ModelSettings
 from ultralytics import YOLO
 
@@ -21,7 +23,7 @@ def run_yolo_inference(
     model: YOLO,
     image_path: str,
     settings: ModelSettings,
-) -> list[dict]:
+) -> tuple[list[dict], str]:
     results = model.predict(
         source=image_path,
         conf=settings.confidence_threshold,
@@ -30,12 +32,14 @@ def run_yolo_inference(
 
     detections = []
 
-    for result in results:
-        class_names = result.names
+    if not results:
+        annotated_image_path = create_empty_annotated_image(image_path)
+        return detections, annotated_image_path
 
-        if result.boxes is None:
-            continue
+    result = results[0]
+    class_names = result.names
 
+    if result.boxes is not None:
         for box in result.boxes:
             x1, y1, x2, y2 = box.xyxy[0].tolist()
             confidence = float(box.conf[0])
@@ -53,4 +57,26 @@ def run_yolo_inference(
                 }
             )
 
-    return detections
+    annotated_image = result.plot()
+    annotated_image_path = create_temp_result_image_path()
+
+    cv2.imwrite(annotated_image_path, annotated_image)
+
+    return detections, annotated_image_path
+
+
+def create_empty_annotated_image(image_path: str) -> str:
+    image = cv2.imread(image_path)
+
+    if image is None:
+        raise RuntimeError(f"Could not read image for annotation: {image_path}")
+
+    annotated_image_path = create_temp_result_image_path()
+    cv2.imwrite(annotated_image_path, image)
+
+    return annotated_image_path
+
+
+def create_temp_result_image_path() -> str:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
+        return temp_file.name

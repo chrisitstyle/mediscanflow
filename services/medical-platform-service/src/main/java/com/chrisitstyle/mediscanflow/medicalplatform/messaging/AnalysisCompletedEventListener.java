@@ -18,6 +18,7 @@ public class AnalysisCompletedEventListener {
                 event.payload().analysisId(),
                 event.payload().modelName(),
                 event.payload().modelVersion(),
+                event.payload().resultObjectKey(),
                 event.payload().detections()
         );
     }

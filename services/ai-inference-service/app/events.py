@@ -6,7 +6,11 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def build_completed_event(requested_event: dict, detections: list[dict]) -> dict:
+def build_completed_event(
+    requested_event: dict,
+    result_object_key: str,
+    detections: list[dict],
+) -> dict:
     payload = requested_event["payload"]
 
     return {
@@ -19,6 +23,7 @@ def build_completed_event(requested_event: dict, detections: list[dict]) -> dict
             "analysisId": payload["analysisId"],
             "modelName": payload.get("modelName", "yolo-brain-tumor-detector"),
             "modelVersion": payload.get("modelVersion", "yolov8n"),
+            "resultObjectKey": result_object_key,
             "detections": detections,
         },
     }

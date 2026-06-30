@@ -51,6 +51,9 @@ public class Analysis {
 
     private Instant completedAt;
 
+    @Column(length = 500)
+    private String resultObjectKey;
+
     @OneToMany(mappedBy = "analysis", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AnalysisDetection> detections = new ArrayList<>();
 
@@ -129,6 +132,7 @@ public class Analysis {
     public void complete(
             String modelName,
             String modelVersion,
+            String resultObjectKey,
             List<AnalysisDetectionPayload> detectionPayloads
     ) {
         if (this.status == AnalysisStatus.COMPLETED) {
@@ -138,6 +142,7 @@ public class Analysis {
         this.status = AnalysisStatus.COMPLETED;
         this.modelName = modelName;
         this.modelVersion = modelVersion;
+        this.resultObjectKey = resultObjectKey;
         this.completedAt = Instant.now();
         this.errorMessage = null;
 
@@ -171,6 +176,7 @@ public class Analysis {
         this.modelName = modelName;
         this.modelVersion = modelVersion;
         this.errorMessage = errorMessage;
+        this.resultObjectKey = null;
         this.completedAt = Instant.now();
         this.detections.clear();
     }

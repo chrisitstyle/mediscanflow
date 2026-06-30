@@ -12,6 +12,7 @@ public record AnalysisResponseDTO(
         AnalysisStatus status,
         String originalFileName,
         String objectKey,
+        String resultObjectKey,
         String contentType,
         long fileSizeBytes,
         String modelName,

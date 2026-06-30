@@ -94,12 +94,13 @@ public class AnalysisService {
             UUID analysisId,
             String modelName,
             String modelVersion,
+            String resultObjectKey,
             List<AnalysisDetectionPayload> detections
     ) {
         Analysis analysis = analysisRepository.findById(analysisId)
                 .orElseThrow(() -> new IllegalArgumentException("Analysis not found"));
 
-        analysis.complete(modelName, modelVersion, detections);
+        analysis.complete(modelName, modelVersion, resultObjectKey, detections);
     }
 
     @Transactional
@@ -130,6 +131,7 @@ public class AnalysisService {
                 analysis.getStatus(),
                 analysis.getOriginalFileName(),
                 analysis.getObjectKey(),
+                analysis.getResultObjectKey(),
                 analysis.getContentType(),
                 analysis.getFileSizeBytes(),
                 analysis.getModelName(),
