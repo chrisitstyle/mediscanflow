@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AppNavbar } from "@/components/AppNavbar";
 import { QueryProvider } from "@/lib/queryProvider";
 import "./globals.css";
 
@@ -26,10 +27,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} bg-background`}
     >
-      <body className="min-h-full flex flex-col">
-        <QueryProvider>{children}</QueryProvider>
+      <body className="font-sans antialiased">
+        <QueryProvider>
+          <AppNavbar />
+          {children}
+        </QueryProvider>
       </body>
     </html>
   );
