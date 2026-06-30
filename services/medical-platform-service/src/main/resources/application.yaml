@@ -40,3 +40,4 @@ app:
       access-key: mediscanflow
       secret-key: mediscanflow123
       bucket: medical-scans
+      region: us-east-1

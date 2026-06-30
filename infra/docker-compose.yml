@@ -57,6 +57,7 @@ services:
       APP_STORAGE_MINIO_ACCESS_KEY: mediscanflow
       APP_STORAGE_MINIO_SECRET_KEY: mediscanflow123
       APP_STORAGE_MINIO_BUCKET: medical-scans
+      APP_STORAGE_MINIO_REGION: us-east-1
     ports:
       - "8080:8080"
     depends_on:
