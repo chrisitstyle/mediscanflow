@@ -1,5 +1,6 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.common.error;
 
+import com.chrisitstyle.mediscanflow.medicalplatform.common.validation.InvalidFileUploadException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -160,6 +162,38 @@ public class GlobalExceptionHandler {
                         status.value(),
                         status.getReasonPhrase(),
                         "Unexpected internal server error",
+                        request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler(InvalidFileUploadException.class)
+    ResponseEntity<ApiErrorResponseDTO> handleInvalidFileUpload(
+            InvalidFileUploadException exception,
+            HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        return ResponseEntity.status(status)
+                .body(ApiErrorResponseDTO.of(
+                        status.value(),
+                        status.getReasonPhrase(),
+                        exception.getMessage(),
+                        request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    ResponseEntity<ApiErrorResponseDTO> handleMissingServletRequestPart(
+            MissingServletRequestPartException exception,
+            HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        return ResponseEntity.status(status)
+                .body(ApiErrorResponseDTO.of(
+                        status.value(),
+                        status.getReasonPhrase(),
+                        "Required request part is missing: " + exception.getRequestPartName(),
                         request.getRequestURI()
                 ));
     }

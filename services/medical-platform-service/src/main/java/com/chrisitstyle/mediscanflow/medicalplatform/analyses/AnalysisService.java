@@ -3,6 +3,7 @@ package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisDetectionDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.validation.FileUploadValidator;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.AnalysisEventPublisher;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisDetectionPayload;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisRequestedEvent;
@@ -26,6 +27,7 @@ public class AnalysisService {
     private final AnalysisRepository analysisRepository;
     private final PatientRepository patientRepository;
     private final FileStorageService fileStorageService;
+    private final FileUploadValidator fileUploadValidator;
     private final AnalysisEventPublisher analysisEventPublisher;
 
     @Transactional
@@ -35,6 +37,8 @@ public class AnalysisService {
             String modelName,
             String modelVersion
     ) {
+        fileUploadValidator.validateImageFile(file);
+
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new ResourceNotFoundException("Patient not found"));
 
