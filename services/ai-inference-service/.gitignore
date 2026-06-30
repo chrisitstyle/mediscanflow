@@ -30,6 +30,13 @@ Thumbs.db
 .coverage
 htmlcov/
 
+# Python tooling
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
 # Build artifacts
 build/
 dist/
@@ -40,6 +47,9 @@ models/*.pt
 models/*.onnx
 models/*.engine
 !models/.gitkeep
+
+# Local model/cache files
+.cache/
 
 # Local data
 data/
