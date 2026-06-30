@@ -1,12 +1,16 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.messaging.AnalysisEventPublisher;
+import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisRequestedEvent;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.Patient;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.PatientRepository;
 import com.chrisitstyle.mediscanflow.medicalplatform.storage.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -19,9 +23,15 @@ public class AnalysisService {
     private final AnalysisRepository analysisRepository;
     private final PatientRepository patientRepository;
     private final FileStorageService fileStorageService;
+    private final AnalysisEventPublisher analysisEventPublisher;
 
     @Transactional
-    public AnalysisResponseDTO create(UUID patientId, MultipartFile file, String modelName, String modelVersion) {
+    public AnalysisResponseDTO create(
+            UUID patientId,
+            MultipartFile file,
+            String modelName,
+            String modelVersion
+    ) {
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
 
@@ -30,7 +40,7 @@ public class AnalysisService {
 
         fileStorageService.upload(objectKey, file);
 
-        Analysis analysis = Analysis.uploaded(
+        Analysis analysis = Analysis.queued(
                 analysisId,
                 patient,
                 file.getOriginalFilename(),
@@ -41,9 +51,24 @@ public class AnalysisService {
                 modelVersion
         );
 
-        Analysis saved = analysisRepository.save(analysis);
+        Analysis savedAnalysis = analysisRepository.save(analysis);
 
-        return toResponse(saved);
+        AnalysisRequestedEvent event = AnalysisRequestedEvent.create(
+                savedAnalysis.getId(),
+                patient.getId(),
+                savedAnalysis.getObjectKey(),
+                savedAnalysis.getModelName(),
+                savedAnalysis.getModelVersion()
+        );
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                analysisEventPublisher.publishAnalysisRequested(event);
+            }
+        });
+
+        return toResponseDTO(savedAnalysis);
     }
 
     @Transactional(readOnly = true)
@@ -51,23 +76,26 @@ public class AnalysisService {
         Analysis analysis = analysisRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Analysis not found"));
 
-        return toResponse(analysis);
+        return toResponseDTO(analysis);
     }
 
     @Transactional(readOnly = true)
     public List<AnalysisResponseDTO> findByPatientId(UUID patientId) {
         return analysisRepository.findByPatientIdOrderByCreatedAtDesc(patientId)
                 .stream()
-                .map(this::toResponse)
+                .map(this::toResponseDTO)
                 .toList();
     }
 
     private String buildObjectKey(UUID analysisId, String originalFilename) {
-        String safeFilename = originalFilename == null ? "input" : originalFilename.replaceAll("[^a-zA-Z0-9._-]", "_");
+        String safeFilename = originalFilename == null
+                ? "input"
+                : originalFilename.replaceAll("[^a-zA-Z0-9._-]", "_");
+
         return "analyses/%s/%s".formatted(analysisId, safeFilename);
     }
 
-    private AnalysisResponseDTO toResponse(Analysis analysis) {
+    private AnalysisResponseDTO toResponseDTO(Analysis analysis) {
         return new AnalysisResponseDTO(
                 analysis.getId(),
                 analysis.getPatient().getId(),

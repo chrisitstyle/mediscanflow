@@ -95,4 +95,28 @@ public class Analysis {
                 Instant.now()
         );
     }
+
+    public static Analysis queued(
+            UUID id,
+            Patient patient,
+            String originalFileName,
+            String objectKey,
+            String contentType,
+            long fileSizeBytes,
+            String modelName,
+            String modelVersion
+    ) {
+        return new Analysis(
+                id,
+                patient,
+                AnalysisStatus.QUEUED,
+                originalFileName,
+                objectKey,
+                contentType,
+                fileSizeBytes,
+                modelName,
+                modelVersion,
+                Instant.now()
+        );
+    }
 }
