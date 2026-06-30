@@ -1,4 +1,4 @@
 pika
 minio
 ultralytics
-opencv-python
+opencv-python-headless

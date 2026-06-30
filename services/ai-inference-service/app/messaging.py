@@ -1,4 +1,5 @@
 import json
+import time
 
 import pika
 from config import RabbitMQSettings
@@ -18,13 +19,39 @@ ANALYSIS_FAILED_ROUTING_KEY = "analysis.failed"
 def create_rabbitmq_connection(settings: RabbitMQSettings):
     credentials = pika.PlainCredentials(settings.username, settings.password)
 
-    return pika.BlockingConnection(
-        pika.ConnectionParameters(
-            host=settings.host,
-            port=settings.port,
-            credentials=credentials,
-        )
+    connection_parameters = pika.ConnectionParameters(
+        host=settings.host,
+        port=settings.port,
+        credentials=credentials,
+        heartbeat=30,
+        blocked_connection_timeout=30,
     )
+
+    max_attempts = 30
+    delay_seconds = 2
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            print(
+                f"Connecting to RabbitMQ at {settings.host}:{settings.port} "
+                f"(attempt {attempt}/{max_attempts})..."
+            )
+
+            connection = pika.BlockingConnection(connection_parameters)
+
+            print("Connected to RabbitMQ.")
+
+            return connection
+
+        except pika.exceptions.AMQPConnectionError as exception:
+            print(
+                f"RabbitMQ is not ready yet: {exception}. "
+                f"Retrying in {delay_seconds} seconds..."
+            )
+
+            time.sleep(delay_seconds)
+
+    raise RuntimeError("Could not connect to RabbitMQ after multiple attempts.")
 
 
 def configure_rabbitmq(channel) -> None:

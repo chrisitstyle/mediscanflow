@@ -36,6 +36,34 @@ services:
     volumes:
       - mediscanflow-minio-data:/data
 
+  ai-inference-service:
+    build:
+      context: ../services/ai-inference-service
+      dockerfile: Dockerfile
+    container_name: mediscanflow-ai-inference-service
+    restart: unless-stopped
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: mediscanflow
+      RABBITMQ_PASSWORD: mediscanflow
+
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: mediscanflow
+      MINIO_SECRET_KEY: mediscanflow123
+      MINIO_BUCKET: medical-scans
+      MINIO_SECURE: false
+
+      MODEL_PATH: models/yolov8n-brain-tumor.pt
+      YOLO_CONFIDENCE_THRESHOLD: 0.25
+      SIMULATE_INFERENCE_FAILURE: false
+      YOLO_CONFIG_DIR: /tmp/Ultralytics
+    volumes:
+      - ../services/ai-inference-service/models:/app/models:ro
+    depends_on:
+      - rabbitmq
+      - minio
+
 volumes:
   mediscanflow-postgres-data:
   mediscanflow-rabbitmq-data:
