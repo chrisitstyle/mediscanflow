@@ -3,6 +3,7 @@ package com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisStatus;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record AnalysisResponseDTO(
@@ -17,6 +18,7 @@ public record AnalysisResponseDTO(
         String modelVersion,
         String errorMessage,
         Instant createdAt,
-        Instant completedAt
+        Instant completedAt,
+        List<AnalysisDetectionDTO> detections
 ) {
 }

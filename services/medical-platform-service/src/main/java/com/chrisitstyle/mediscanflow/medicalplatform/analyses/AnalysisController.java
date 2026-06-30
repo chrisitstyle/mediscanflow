@@ -20,8 +20,8 @@ class AnalysisController {
     AnalysisResponseDTO create(
             @PathVariable UUID patientId,
             @RequestPart("file") MultipartFile file,
-            @RequestParam(defaultValue = "brain-tumor-detector") String modelName,
-            @RequestParam(defaultValue = "mock-v1") String modelVersion
+            @RequestParam(defaultValue = "yolo-brain-tumor-detector") String modelName,
+            @RequestParam(defaultValue = "yolov8n") String modelVersion
     ) {
         return analysisService.create(patientId, file, modelName, modelVersion);
     }

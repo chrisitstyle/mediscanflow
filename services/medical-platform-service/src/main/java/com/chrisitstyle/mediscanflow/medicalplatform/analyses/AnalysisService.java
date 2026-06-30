@@ -1,7 +1,9 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisDetectionDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.AnalysisEventPublisher;
+import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisDetectionPayload;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisRequestedEvent;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.Patient;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.PatientRepository;
@@ -87,6 +89,19 @@ public class AnalysisService {
                 .toList();
     }
 
+    @Transactional
+    public void complete(
+            UUID analysisId,
+            String modelName,
+            String modelVersion,
+            List<AnalysisDetectionPayload> detections
+    ) {
+        Analysis analysis = analysisRepository.findById(analysisId)
+                .orElseThrow(() -> new IllegalArgumentException("Analysis not found"));
+
+        analysis.complete(modelName, modelVersion, detections);
+    }
+
     private String buildObjectKey(UUID analysisId, String originalFilename) {
         String safeFilename = originalFilename == null
                 ? "input"
@@ -108,7 +123,19 @@ public class AnalysisService {
                 analysis.getModelVersion(),
                 analysis.getErrorMessage(),
                 analysis.getCreatedAt(),
-                analysis.getCompletedAt()
+                analysis.getCompletedAt(),
+                analysis.getDetections()
+                        .stream()
+                        .map(detection -> new AnalysisDetectionDTO(
+                                detection.getId(),
+                                detection.getLabel(),
+                                detection.getConfidence(),
+                                detection.getX(),
+                                detection.getY(),
+                                detection.getWidth(),
+                                detection.getHeight()
+                        ))
+                        .toList()
         );
     }
 }

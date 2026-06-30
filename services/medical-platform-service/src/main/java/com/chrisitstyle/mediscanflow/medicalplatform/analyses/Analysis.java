@@ -1,5 +1,6 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 
+import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisDetectionPayload;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.Patient;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -7,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -47,6 +50,9 @@ public class Analysis {
     private Instant createdAt;
 
     private Instant completedAt;
+
+    @OneToMany(mappedBy = "analysis", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AnalysisDetection> detections = new ArrayList<>();
 
     private Analysis(
             UUID id,
@@ -117,6 +123,38 @@ public class Analysis {
                 modelName,
                 modelVersion,
                 Instant.now()
+        );
+    }
+
+    public void complete(
+            String modelName,
+            String modelVersion,
+            List<AnalysisDetectionPayload> detectionPayloads
+    ) {
+        if (this.status == AnalysisStatus.COMPLETED) {
+            return;
+        }
+
+        this.status = AnalysisStatus.COMPLETED;
+        this.modelName = modelName;
+        this.modelVersion = modelVersion;
+        this.completedAt = Instant.now();
+        this.errorMessage = null;
+
+        this.detections.clear();
+
+        detectionPayloads.forEach(detectionPayload ->
+                this.detections.add(
+                        AnalysisDetection.create(
+                                this,
+                                detectionPayload.label(),
+                                detectionPayload.confidence(),
+                                detectionPayload.x(),
+                                detectionPayload.y(),
+                                detectionPayload.width(),
+                                detectionPayload.height()
+                        )
+                )
         );
     }
 }
