@@ -10,6 +10,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,6 +22,8 @@ public class RabbitMQConfig {
     public static final String ANALYSIS_REQUESTED_ROUTING_KEY = "analysis.requested";
     public static final String ANALYSIS_COMPLETED_QUEUE = "analysis.completed";
     public static final String ANALYSIS_COMPLETED_ROUTING_KEY = "analysis.completed";
+    public static final String ANALYSIS_FAILED_QUEUE = "analysis.failed";
+    public static final String ANALYSIS_FAILED_ROUTING_KEY = "analysis.failed";
 
     @Bean
     DirectExchange analysisExchange() {
@@ -64,6 +67,24 @@ public class RabbitMQConfig {
                 .bind(analysisCompletedQueue)
                 .to(analysisExchange)
                 .with(ANALYSIS_COMPLETED_ROUTING_KEY);
+    }
+
+    @Bean
+    Queue analysisFailedQueue() {
+        return QueueBuilder
+                .durable(ANALYSIS_FAILED_QUEUE)
+                .build();
+    }
+
+    @Bean
+    Binding analysisFailedBinding(
+            @Qualifier("analysisFailedQueue") Queue analysisFailedQueue,
+            DirectExchange analysisExchange
+    ) {
+        return BindingBuilder
+                .bind(analysisFailedQueue)
+                .to(analysisExchange)
+                .with(ANALYSIS_FAILED_ROUTING_KEY);
     }
 
     @Bean

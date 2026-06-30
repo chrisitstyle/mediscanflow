@@ -157,4 +157,21 @@ public class Analysis {
                 )
         );
     }
+
+    public void fail(
+            String modelName,
+            String modelVersion,
+            String errorMessage
+    ) {
+        if (this.status == AnalysisStatus.COMPLETED) {
+            return;
+        }
+
+        this.status = AnalysisStatus.FAILED;
+        this.modelName = modelName;
+        this.modelVersion = modelVersion;
+        this.errorMessage = errorMessage;
+        this.completedAt = Instant.now();
+        this.detections.clear();
+    }
 }

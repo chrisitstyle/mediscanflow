@@ -9,6 +9,7 @@ import pika
 ANALYSIS_EXCHANGE = "mediscanflow.analysis"
 ANALYSIS_REQUESTED_QUEUE = "analysis.requested"
 ANALYSIS_COMPLETED_ROUTING_KEY = "analysis.completed"
+ANALYSIS_FAILED_ROUTING_KEY = "analysis.failed"
 
 
 def utc_now() -> str:
@@ -42,6 +43,36 @@ def build_completed_event(requested_event: dict) -> dict:
     }
 
 
+def build_failed_event(requested_event: dict, error_message: str) -> dict:
+    payload = requested_event["payload"]
+
+    return {
+        "eventId": str(uuid.uuid4()),
+        "eventType": "AnalysisFailed",
+        "eventVersion": 1,
+        "occurredAt": utc_now(),
+        "correlationId": requested_event.get("correlationId"),
+        "payload": {
+            "analysisId": payload["analysisId"],
+            "modelName": payload.get("modelName", "yolo-brain-tumor-detector"),
+            "modelVersion": payload.get("modelVersion", "yolov8n"),
+            "errorMessage": error_message,
+        },
+    }
+
+
+def publish_event(channel, routing_key: str, event: dict) -> None:
+    channel.basic_publish(
+        exchange=ANALYSIS_EXCHANGE,
+        routing_key=routing_key,
+        body=json.dumps(event),
+        properties=pika.BasicProperties(
+            content_type="application/json",
+            delivery_mode=2,
+        ),
+    )
+
+
 def main() -> None:
     rabbitmq_host = os.getenv("RABBITMQ_HOST", "localhost")
     rabbitmq_port = int(os.getenv("RABBITMQ_PORT", "5672"))
@@ -52,44 +83,74 @@ def main() -> None:
 
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(
-            host=rabbitmq_host, port=rabbitmq_port, credentials=credentials
+            host=rabbitmq_host,
+            port=rabbitmq_port,
+            credentials=credentials,
         )
     )
 
     channel = connection.channel()
 
     channel.exchange_declare(
-        exchange=ANALYSIS_EXCHANGE, exchange_type="direct", durable=True
+        exchange=ANALYSIS_EXCHANGE,
+        exchange_type="direct",
+        durable=True,
     )
 
-    channel.queue_declare(queue=ANALYSIS_REQUESTED_QUEUE, durable=True)
+    channel.queue_declare(
+        queue=ANALYSIS_REQUESTED_QUEUE,
+        durable=True,
+    )
 
     def handle_message(ch, method, properties, body):
         requested_event = json.loads(body.decode("utf-8"))
-
         analysis_id = requested_event["payload"]["analysisId"]
+
         print(f"Received AnalysisRequested event for analysisId={analysis_id}")
 
-        time.sleep(3)
+        try:
+            should_fail = (
+                os.getenv("SIMULATE_INFERENCE_FAILURE", "false").lower() == "true"
+            )
 
-        completed_event = build_completed_event(requested_event)
+            if should_fail:
+                raise RuntimeError("Simulated inference failure")
 
-        ch.basic_publish(
-            exchange=ANALYSIS_EXCHANGE,
-            routing_key=ANALYSIS_COMPLETED_ROUTING_KEY,
-            body=json.dumps(completed_event),
-            properties=pika.BasicProperties(
-                content_type="application/json", delivery_mode=2
-            ),
-        )
+            time.sleep(3)
 
-        print(f"Published AnalysisCompleted event for analysisId={analysis_id}")
+            completed_event = build_completed_event(requested_event)
 
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+            publish_event(
+                channel=ch,
+                routing_key=ANALYSIS_COMPLETED_ROUTING_KEY,
+                event=completed_event,
+            )
+
+            print(f"Published AnalysisCompleted event for analysisId={analysis_id}")
+
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+
+        except Exception as exception:
+            error_message = str(exception)
+            failed_event = build_failed_event(requested_event, error_message)
+
+            publish_event(
+                channel=ch,
+                routing_key=ANALYSIS_FAILED_ROUTING_KEY,
+                event=failed_event,
+            )
+
+            print(
+                f"Published AnalysisFailed event for analysisId={analysis_id}: "
+                f"{error_message}"
+            )
+
+            ch.basic_ack(delivery_tag=method.delivery_tag)
 
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(
-        queue=ANALYSIS_REQUESTED_QUEUE, on_message_callback=handle_message
+        queue=ANALYSIS_REQUESTED_QUEUE,
+        on_message_callback=handle_message,
     )
 
     print("AI inference worker started. Waiting for AnalysisRequested events...")

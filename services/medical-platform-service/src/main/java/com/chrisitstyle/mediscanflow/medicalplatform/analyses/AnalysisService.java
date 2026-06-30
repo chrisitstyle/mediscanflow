@@ -102,6 +102,19 @@ public class AnalysisService {
         analysis.complete(modelName, modelVersion, detections);
     }
 
+    @Transactional
+    public void fail(
+            UUID analysisId,
+            String modelName,
+            String modelVersion,
+            String errorMessage
+    ) {
+        Analysis analysis = analysisRepository.findById(analysisId)
+                .orElseThrow(() -> new IllegalArgumentException("Analysis not found"));
+
+        analysis.fail(modelName, modelVersion, errorMessage);
+    }
+
     private String buildObjectKey(UUID analysisId, String originalFilename) {
         String safeFilename = originalFilename == null
                 ? "input"
