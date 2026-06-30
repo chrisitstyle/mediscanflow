@@ -1,19 +1,53 @@
 import json
 import os
+import tempfile
 import time
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pika
+from minio import Minio
 
 ANALYSIS_EXCHANGE = "mediscanflow.analysis"
 ANALYSIS_REQUESTED_QUEUE = "analysis.requested"
 ANALYSIS_COMPLETED_ROUTING_KEY = "analysis.completed"
 ANALYSIS_FAILED_ROUTING_KEY = "analysis.failed"
 
+MINIO_BUCKET = os.getenv("MINIO_BUCKET", "medical-scans")
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def create_minio_client() -> Minio:
+    endpoint = os.getenv("MINIO_ENDPOINT", "localhost:9000")
+    access_key = os.getenv("MINIO_ACCESS_KEY", "mediscanflow")
+    secret_key = os.getenv("MINIO_SECRET_KEY", "mediscanflow123")
+    secure = os.getenv("MINIO_SECURE", "false").lower() == "true"
+
+    return Minio(
+        endpoint=endpoint,
+        access_key=access_key,
+        secret_key=secret_key,
+        secure=secure,
+    )
+
+
+def download_input_file(minio_client: Minio, object_key: str) -> str:
+    suffix = Path(object_key).suffix or ".img"
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+        temp_file_path = temp_file.name
+
+    minio_client.fget_object(
+        bucket_name=MINIO_BUCKET,
+        object_name=object_key,
+        file_path=temp_file_path,
+    )
+
+    return temp_file_path
 
 
 def build_completed_event(requested_event: dict) -> dict:
@@ -90,6 +124,7 @@ def main() -> None:
     )
 
     channel = connection.channel()
+    minio_client = create_minio_client()
 
     channel.exchange_declare(
         exchange=ANALYSIS_EXCHANGE,
@@ -104,9 +139,15 @@ def main() -> None:
 
     def handle_message(ch, method, properties, body):
         requested_event = json.loads(body.decode("utf-8"))
-        analysis_id = requested_event["payload"]["analysisId"]
+        payload = requested_event["payload"]
+
+        analysis_id = payload["analysisId"]
+        object_key = payload["objectKey"]
+
+        input_file_path = None
 
         print(f"Received AnalysisRequested event for analysisId={analysis_id}")
+        print(f"Downloading input file from MinIO: objectKey={object_key}")
 
         try:
             should_fail = (
@@ -115,6 +156,10 @@ def main() -> None:
 
             if should_fail:
                 raise RuntimeError("Simulated inference failure")
+
+            input_file_path = download_input_file(minio_client, object_key)
+
+            print(f"Downloaded input file to: {input_file_path}")
 
             time.sleep(3)
 
@@ -146,6 +191,11 @@ def main() -> None:
             )
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
+
+        finally:
+            if input_file_path and os.path.exists(input_file_path):
+                os.remove(input_file_path)
+                print(f"Deleted temporary input file: {input_file_path}")
 
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(
