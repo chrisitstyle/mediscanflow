@@ -1,12 +1,11 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.storage;
 
-import io.minio.BucketExistsArgs;
-import io.minio.MakeBucketArgs;
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
+import io.minio.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +28,22 @@ class MinioFileStorageService implements FileStorageService {
                     .build());
         } catch (Exception exception) {
             throw new IllegalStateException("Could not upload file to MinIO", exception);
+        }
+    }
+
+    @Override
+    public String generatePresignedUrl(String objectKey) {
+        try {
+            return minioClient.getPresignedObjectUrl(
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Http.Method.GET)
+                            .bucket(properties.bucket())
+                            .object(objectKey)
+                            .expiry(15, TimeUnit.MINUTES)
+                            .build()
+            );
+        } catch (Exception exception) {
+            throw new IllegalStateException("Could not generate presigned URL for object: " + objectKey, exception);
         }
     }
 

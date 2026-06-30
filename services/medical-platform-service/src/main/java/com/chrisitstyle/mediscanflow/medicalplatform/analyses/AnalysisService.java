@@ -125,13 +125,21 @@ public class AnalysisService {
     }
 
     private AnalysisResponseDTO toResponseDTO(Analysis analysis) {
+        String originalImageUrl = fileStorageService.generatePresignedUrl(analysis.getObjectKey());
+
+        String resultImageUrl = analysis.getResultObjectKey() == null
+                ? null
+                : fileStorageService.generatePresignedUrl(analysis.getResultObjectKey());
+
         return new AnalysisResponseDTO(
                 analysis.getId(),
                 analysis.getPatient().getId(),
                 analysis.getStatus(),
                 analysis.getOriginalFileName(),
                 analysis.getObjectKey(),
+                originalImageUrl,
                 analysis.getResultObjectKey(),
+                resultImageUrl,
                 analysis.getContentType(),
                 analysis.getFileSizeBytes(),
                 analysis.getModelName(),
