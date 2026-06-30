@@ -2,6 +2,7 @@ package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisDetectionDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.AnalysisEventPublisher;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisDetectionPayload;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisRequestedEvent;
@@ -35,7 +36,7 @@ public class AnalysisService {
             String modelVersion
     ) {
         Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found"));
 
         UUID analysisId = UUID.randomUUID();
         String objectKey = buildObjectKey(analysisId, file.getOriginalFilename());
@@ -76,7 +77,7 @@ public class AnalysisService {
     @Transactional(readOnly = true)
     public AnalysisResponseDTO findById(UUID id) {
         Analysis analysis = analysisRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Analysis not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Analysis not found"));
 
         return toResponseDTO(analysis);
     }
@@ -98,7 +99,7 @@ public class AnalysisService {
             List<AnalysisDetectionPayload> detections
     ) {
         Analysis analysis = analysisRepository.findById(analysisId)
-                .orElseThrow(() -> new IllegalArgumentException("Analysis not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Analysis not found"));
 
         analysis.complete(modelName, modelVersion, resultObjectKey, detections);
     }
@@ -111,7 +112,7 @@ public class AnalysisService {
             String errorMessage
     ) {
         Analysis analysis = analysisRepository.findById(analysisId)
-                .orElseThrow(() -> new IllegalArgumentException("Analysis not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Analysis not found"));
 
         analysis.fail(modelName, modelVersion, errorMessage);
     }

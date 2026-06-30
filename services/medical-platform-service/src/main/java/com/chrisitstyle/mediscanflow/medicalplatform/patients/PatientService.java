@@ -1,5 +1,7 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.patients;
 
+import com.chrisitstyle.mediscanflow.medicalplatform.common.error.DuplicateResourceException;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.CreatePatientRequestDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientResponseDTO;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +20,7 @@ public class PatientService {
     @Transactional
     public PatientResponseDTO create(CreatePatientRequestDTO request) {
         if (patientRepository.existsByMedicalRecordNumber(request.medicalRecordNumber())) {
-            throw new IllegalArgumentException("Patient with this medical record number already exists");
+            throw new DuplicateResourceException("Patient with this medical record number already exists");
         }
 
         Patient patient = Patient.create(
@@ -42,7 +44,7 @@ public class PatientService {
     @Transactional(readOnly = true)
     public PatientResponseDTO findById(UUID id) {
         Patient patient = patientRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found"));
 
         return toResponse(patient);
     }
