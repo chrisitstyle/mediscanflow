@@ -1,6 +1,8 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisListItemDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysisDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.InvalidAnalysisStateException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -15,12 +17,13 @@ import java.util.UUID;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AnalysisController.class)
-class AnalysisControllerRetryTest {
+class AnalysisControllerTest {
 
     private static final UUID ANALYSIS_ID =
             UUID.fromString("4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24");
@@ -35,6 +38,59 @@ class AnalysisControllerRetryTest {
     private AnalysisService analysisService;
 
     @Test
+    void findAllAnalysesReturnsAnalysisListItems() throws Exception {
+        when(analysisService.findAllAnalyses())
+                .thenReturn(List.of(analysisListItem()));
+
+        mockMvc.perform(get("/api/analyses").contextPath("/api"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(ANALYSIS_ID.toString()))
+                .andExpect(jsonPath("$[0].patientId").value(PATIENT_ID.toString()))
+                .andExpect(jsonPath("$[0].patientFullName").value("John Doe"))
+                .andExpect(jsonPath("$[0].status").value("COMPLETED"))
+                .andExpect(jsonPath("$[0].originalFileName").value("brain-scan.jpg"))
+                .andExpect(jsonPath("$[0].modelName").value("yolo-brain-tumor-detector"))
+                .andExpect(jsonPath("$[0].modelVersion").value("yolov8n"))
+                .andExpect(jsonPath("$[0].fileSizeBytes").value(30310))
+                .andExpect(jsonPath("$[0].createdAt").exists())
+                .andExpect(jsonPath("$[0].completedAt").exists());
+
+        verify(analysisService).findAllAnalyses();
+    }
+
+    @Test
+    void getRecentAnalysesReturnsLatestAnalysesWithDefaultLimit() throws Exception {
+        when(analysisService.findRecentAnalyses(10))
+                .thenReturn(List.of(recentAnalysis()));
+
+        mockMvc.perform(get("/api/analyses/recent").contextPath("/api"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(ANALYSIS_ID.toString()))
+                .andExpect(jsonPath("$[0].patientId").value(PATIENT_ID.toString()))
+                .andExpect(jsonPath("$[0].patientFullName").value("John Doe"))
+                .andExpect(jsonPath("$[0].status").value("COMPLETED"))
+                .andExpect(jsonPath("$[0].originalFileName").value("brain-scan.jpg"))
+                .andExpect(jsonPath("$[0].modelName").value("yolo-brain-tumor-detector"))
+                .andExpect(jsonPath("$[0].modelVersion").value("yolov8n"))
+                .andExpect(jsonPath("$[0].fileSizeBytes").value(30310))
+                .andExpect(jsonPath("$[0].createdAt").exists())
+                .andExpect(jsonPath("$[0].completedAt").exists());
+
+        verify(analysisService).findRecentAnalyses(10);
+    }
+
+    @Test
+    void getRecentAnalysesPassesCustomLimitToService() throws Exception {
+        when(analysisService.findRecentAnalyses(5))
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/api/analyses/recent?limit=5").contextPath("/api"))
+                .andExpect(status().isOk());
+
+        verify(analysisService).findRecentAnalyses(5);
+    }
+
+    @Test
     void retryAnalysisReturnsQueuedAnalysis() throws Exception {
         when(analysisService.retryAnalysis(ANALYSIS_ID))
                 .thenReturn(retriedAnalysisResponse());
@@ -46,10 +102,11 @@ class AnalysisControllerRetryTest {
                 .andExpect(jsonPath("$.status").value("QUEUED"))
                 .andExpect(jsonPath("$.originalFileName").value("brain-scan.jpg"))
                 .andExpect(jsonPath("$.objectKey").value("analyses/%s/brain-scan.jpg".formatted(ANALYSIS_ID)))
-                .andExpect(jsonPath("$.resultObjectKey").doesNotExist())
-                .andExpect(jsonPath("$.resultImageUrl").doesNotExist())
-                .andExpect(jsonPath("$.errorMessage").doesNotExist())
-                .andExpect(jsonPath("$.completedAt").doesNotExist())
+                .andExpect(jsonPath("$.originalImageUrl").value("http://localhost:9000/medical-scans/brain-scan.jpg"))
+                .andExpect(jsonPath("$.resultObjectKey").isEmpty())
+                .andExpect(jsonPath("$.resultImageUrl").isEmpty())
+                .andExpect(jsonPath("$.errorMessage").isEmpty())
+                .andExpect(jsonPath("$.completedAt").isEmpty())
                 .andExpect(jsonPath("$.detections").isArray())
                 .andExpect(jsonPath("$.detections").isEmpty());
 
@@ -84,6 +141,36 @@ class AnalysisControllerRetryTest {
                 .andExpect(jsonPath("$.error").value("Not Found"))
                 .andExpect(jsonPath("$.message").value("Analysis not found with id: " + ANALYSIS_ID))
                 .andExpect(jsonPath("$.path").value("/api/analyses/%s/retry".formatted(ANALYSIS_ID)));
+    }
+
+    private static AnalysisListItemDTO analysisListItem() {
+        return new AnalysisListItemDTO(
+                ANALYSIS_ID,
+                PATIENT_ID,
+                "John Doe",
+                AnalysisStatus.COMPLETED,
+                "brain-scan.jpg",
+                "yolo-brain-tumor-detector",
+                "yolov8n",
+                30310L,
+                Instant.parse("2026-07-01T10:00:00Z"),
+                Instant.parse("2026-07-01T10:00:08Z")
+        );
+    }
+
+    private static RecentAnalysisDTO recentAnalysis() {
+        return new RecentAnalysisDTO(
+                ANALYSIS_ID,
+                PATIENT_ID,
+                "John Doe",
+                AnalysisStatus.COMPLETED,
+                "brain-scan.jpg",
+                "yolo-brain-tumor-detector",
+                "yolov8n",
+                30310L,
+                Instant.parse("2026-07-01T10:00:00Z"),
+                Instant.parse("2026-07-01T10:00:08Z")
+        );
     }
 
     private static AnalysisResponseDTO retriedAnalysisResponse() {
