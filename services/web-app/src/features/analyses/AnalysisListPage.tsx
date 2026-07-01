@@ -26,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { queryKeys } from "@/lib/queryKeys";
 
 function formatDateTime(value: string | null) {
   if (!value) {
@@ -58,7 +59,7 @@ export function AnalysisListPage() {
     isError,
     error,
   } = useQuery({
-    queryKey: ["analyses"],
+    queryKey: queryKeys.analyses.list(),
     queryFn: getAnalyses,
     refetchInterval: 10_000,
   });

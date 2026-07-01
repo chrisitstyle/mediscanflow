@@ -28,6 +28,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { queryKeys } from "@/lib/queryKeys";
 
 type UploadScanDialogProps = {
   patientId: string;
@@ -84,20 +85,23 @@ export function UploadScanDialog({ patientId }: UploadScanDialogProps) {
         description: "AI analysis was queued successfully.",
       });
 
-      queryClient.setQueryData(["analysis", analysis.id], analysis);
+      queryClient.setQueryData(
+        queryKeys.analyses.detail(analysis.id),
+        analysis,
+      );
 
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: ["patients", patientId, "analyses"],
+          queryKey: queryKeys.patients.analyses(patientId),
         }),
         queryClient.invalidateQueries({
-          queryKey: ["dashboard", "summary"],
+          queryKey: queryKeys.dashboard.summary(),
         }),
         queryClient.invalidateQueries({
-          queryKey: ["dashboard", "recent-analyses"],
+          queryKey: queryKeys.analyses.recent(),
         }),
         queryClient.invalidateQueries({
-          queryKey: ["analyses"],
+          queryKey: queryKeys.analyses.list(),
         }),
       ]);
 

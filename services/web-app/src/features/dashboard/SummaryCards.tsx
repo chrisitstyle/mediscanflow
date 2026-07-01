@@ -8,7 +8,7 @@ import {
   Users,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-
+import { queryKeys } from "@/lib/queryKeys";
 import { getDashboardSummary } from "@/api/dashboardApi";
 import { ApiClientError } from "@/lib/apiClient";
 
@@ -31,7 +31,7 @@ export function SummaryCards() {
     isError,
     error,
   } = useQuery({
-    queryKey: ["dashboard", "summary"],
+    queryKey: queryKeys.dashboard.summary(),
     queryFn: getDashboardSummary,
     refetchInterval: 15_000,
   });

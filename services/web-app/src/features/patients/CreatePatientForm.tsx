@@ -28,6 +28,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { queryKeys } from "@/lib/queryKeys";
 
 type FormState = CreatePatientInput;
 type FormErrors = Partial<Record<keyof FormState, string>>;
@@ -81,7 +82,9 @@ export function CreatePatientForm() {
         description: `${patient.firstName} ${patient.lastName} was added to the registry.`,
       });
 
-      await queryClient.invalidateQueries({ queryKey: ["patients"] });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.patients.all,
+      });
 
       router.push("/patients");
     },

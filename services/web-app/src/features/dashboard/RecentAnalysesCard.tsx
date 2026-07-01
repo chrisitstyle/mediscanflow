@@ -27,6 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { queryKeys } from "@/lib/queryKeys";
 
 function formatDateTime(value: string | null) {
   if (!value) {
@@ -58,7 +59,7 @@ export function RecentAnalysesCard() {
     isError,
     error,
   } = useQuery({
-    queryKey: ["dashboard", "recent-analyses"],
+    queryKey: queryKeys.analyses.recent(),
     queryFn: () => getRecentAnalyses(10),
     refetchInterval: 10_000,
   });
