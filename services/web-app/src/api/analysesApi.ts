@@ -21,6 +21,12 @@ export function getRecentAnalyses(limit = 10): Promise<RecentAnalysis[]> {
   return apiFetch<RecentAnalysis[]>(`/analyses/recent?limit=${limit}`);
 }
 
+export function retryAnalysis(analysisId: string): Promise<Analysis> {
+  return apiFetch<Analysis>(`/analyses/${analysisId}/retry`, {
+    method: "POST",
+  });
+}
+
 export function uploadScan(input: UploadScanInput): Promise<Analysis> {
   const formData = new FormData();
 
