@@ -2,6 +2,7 @@ package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisDetectionDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysisDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.validation.FileUploadValidator;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.AnalysisEventPublisher;
@@ -11,6 +12,8 @@ import com.chrisitstyle.mediscanflow.medicalplatform.patients.Patient;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.PatientRepository;
 import com.chrisitstyle.mediscanflow.medicalplatform.storage.FileStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -106,6 +109,15 @@ public class AnalysisService {
                 .orElseThrow(() -> new ResourceNotFoundException("Analysis not found"));
 
         analysis.complete(modelName, modelVersion, resultObjectKey, detections);
+
+    }
+
+    @Transactional(readOnly = true)
+    public List<RecentAnalysisDTO> findRecentAnalyses(int limit) {
+        int safeLimit = Math.clamp(limit, 1, 20);
+        Pageable pageable = PageRequest.of(0, safeLimit);
+
+        return analysisRepository.findRecentAnalyses(pageable);
     }
 
     @Transactional
