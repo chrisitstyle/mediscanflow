@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
@@ -212,5 +213,19 @@ public class GlobalExceptionHandler {
                         "Required request part is missing: " + exception.getRequestPartName(),
                         request.getRequestURI()
                 ));
+    }
+
+    @ExceptionHandler(InvalidPatientStateException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiErrorResponseDTO handleInvalidPatientState(
+            InvalidPatientStateException exception,
+            HttpServletRequest request
+    ) {
+        return ApiErrorResponseDTO.of(
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
     }
 }

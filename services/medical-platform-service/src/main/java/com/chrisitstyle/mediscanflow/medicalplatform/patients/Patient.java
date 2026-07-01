@@ -36,6 +36,12 @@ public class Patient {
     @Column(nullable = false)
     private Instant createdAt;
 
+    @Column(nullable = false)
+    private boolean archived = false;
+
+    @Column(name = "archived_at")
+    private Instant archivedAt;
+
     private Patient(
             UUID id,
             String firstName,
@@ -50,6 +56,28 @@ public class Patient {
         this.dateOfBirth = dateOfBirth;
         this.medicalRecordNumber = medicalRecordNumber;
         this.createdAt = createdAt;
+    }
+
+    public boolean isArchived() {
+        return archived;
+    }
+
+    public Instant getArchivedAt() {
+        return archivedAt;
+    }
+
+    public void archive() {
+        if (!archived) {
+            archived = true;
+            archivedAt = Instant.now();
+        }
+    }
+
+    public void restore() {
+        if (archived) {
+            archived = false;
+            archivedAt = null;
+        }
     }
 
     public static Patient create(

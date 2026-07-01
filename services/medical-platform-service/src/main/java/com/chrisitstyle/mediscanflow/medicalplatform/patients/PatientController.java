@@ -25,10 +25,11 @@ class PatientController {
     }
 
     @GetMapping
-    List<PatientResponseDTO> findAll(
-            @RequestParam(required = false) String search
+    public List<PatientResponseDTO> findAll(
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "false") boolean includeArchived
     ) {
-        return patientService.findAll(search);
+        return patientService.findAll(search, includeArchived);
     }
 
     @GetMapping("/{id}")
@@ -42,5 +43,15 @@ class PatientController {
             @Valid @RequestBody PatientProfileUpdateDTO request
     ) {
         return patientService.updatePatientProfile(patientId, request);
+    }
+
+    @PatchMapping("/{patientId}/archive")
+    public PatientResponseDTO archivePatient(@PathVariable UUID patientId) {
+        return patientService.archivePatient(patientId);
+    }
+
+    @PatchMapping("/{patientId}/restore")
+    public PatientResponseDTO restorePatient(@PathVariable UUID patientId) {
+        return patientService.restorePatient(patientId);
     }
 }

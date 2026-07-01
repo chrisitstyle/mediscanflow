@@ -1,13 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { Search, SearchX, UserPlus, UsersRound, X } from "lucide-react";
+import {
+  Archive,
+  Search,
+  SearchX,
+  UserPlus,
+  UsersRound,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { getPatients } from "@/api/patientsApi";
 import { EmptyState } from "@/components/EmptyState";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -53,12 +61,18 @@ function formatDate(value: string) {
 
 export function PatientListPage() {
   const [search, setSearch] = useState("");
+  const [includeArchived, setIncludeArchived] = useState(false);
+
   const debouncedSearch = useDebouncedValue(search, 300);
   const normalizedSearch = debouncedSearch.trim();
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
-    queryKey: queryKeys.patients.list(normalizedSearch),
-    queryFn: () => getPatients({ search: normalizedSearch }),
+    queryKey: queryKeys.patients.list(normalizedSearch, includeArchived),
+    queryFn: () =>
+      getPatients({
+        search: normalizedSearch,
+        includeArchived,
+      }),
   });
 
   const patients = data ?? [];
@@ -95,28 +109,41 @@ export function PatientListPage() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          <div className="relative max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="relative max-w-md flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search patients..."
-              className="pl-9 pr-10"
-            />
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search patients..."
+                className="pl-9 pr-10"
+              />
 
-            {search.trim().length > 0 && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1/2 size-8 -translate-y-1/2"
-                onClick={() => setSearch("")}
-                aria-label="Clear search"
-              >
-                <X className="size-4" />
-              </Button>
-            )}
+              {search.trim().length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 size-8 -translate-y-1/2"
+                  onClick={() => setSearch("")}
+                  aria-label="Clear search"
+                >
+                  <X className="size-4" />
+                </Button>
+              )}
+            </div>
+
+            <Button
+              type="button"
+              variant={includeArchived ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIncludeArchived((current) => !current)}
+              className="w-full md:w-auto"
+            >
+              <Archive className="size-4" />
+              {includeArchived ? "Showing archived" : "Show archived"}
+            </Button>
           </div>
 
           {isError && (
@@ -171,9 +198,16 @@ export function PatientListPage() {
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <h3 className="font-medium">
-                          {patient.firstName} {patient.lastName}
-                        </h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-medium">
+                            {patient.firstName} {patient.lastName}
+                          </h3>
+
+                          {patient.archived && (
+                            <Badge variant="secondary">Archived</Badge>
+                          )}
+                        </div>
+
                         <p className="mt-1 text-xs text-muted-foreground">
                           {patient.medicalRecordNumber}
                         </p>
@@ -214,8 +248,14 @@ export function PatientListPage() {
                     {patients.map((patient) => (
                       <TableRow key={patient.id}>
                         <TableCell>
-                          <div className="font-medium">
-                            {patient.firstName} {patient.lastName}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium">
+                              {patient.firstName} {patient.lastName}
+                            </span>
+
+                            {patient.archived && (
+                              <Badge variant="secondary">Archived</Badge>
+                            )}
                           </div>
                         </TableCell>
 

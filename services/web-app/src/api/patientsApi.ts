@@ -14,13 +14,22 @@ export type PatientProfileUpdateInput = {
   dateOfBirth: string;
 };
 
-export async function getPatients(input?: {
+export type GetPatientsInput = {
   search?: string;
-}): Promise<Patient[]> {
+  includeArchived?: boolean;
+};
+
+export async function getPatients(
+  input: GetPatientsInput = {},
+): Promise<Patient[]> {
   const searchParams = new URLSearchParams();
 
-  if (input?.search) {
+  if (input.search) {
     searchParams.set("search", input.search);
+  }
+
+  if (input.includeArchived) {
+    searchParams.set("includeArchived", "true");
   }
 
   const query = searchParams.toString();
@@ -48,5 +57,17 @@ export async function updatePatientProfile(
   return apiFetch<Patient>(`/patients/${patientId}/profile`, {
     method: "PUT",
     body: input,
+  });
+}
+
+export async function archivePatient(patientId: string): Promise<Patient> {
+  return apiFetch<Patient>(`/patients/${patientId}/archive`, {
+    method: "PATCH",
+  });
+}
+
+export async function restorePatient(patientId: string): Promise<Patient> {
+  return apiFetch<Patient>(`/patients/${patientId}/restore`, {
+    method: "PATCH",
   });
 }

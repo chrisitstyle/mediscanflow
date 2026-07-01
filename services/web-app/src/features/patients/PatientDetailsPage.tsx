@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Pencil } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Archive, Pencil, RotateCcw } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
-import { getPatient } from "@/api/patientsApi";
+import { archivePatient, getPatient, restorePatient } from "@/api/patientsApi";
 import { getPatientAnalyses } from "@/api/analysesApi";
 import { PatientAnalysesList } from "@/features/analyses/PatientAnalysesList";
 import { UploadScanDialog } from "@/features/analyses/UploadScanDialog";
@@ -42,6 +43,8 @@ export function PatientDetailsPage() {
   const params = useParams<{ patientId: string }>();
   const patientId = params.patientId;
 
+  const queryClient = useQueryClient();
+
   const patientQuery = useQuery({
     queryKey: queryKeys.patients.detail(patientId),
     queryFn: () => getPatient(patientId),
@@ -52,6 +55,68 @@ export function PatientDetailsPage() {
     queryKey: queryKeys.patients.analyses(patientId),
     queryFn: () => getPatientAnalyses(patientId),
     enabled: !!patientId,
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: archivePatient,
+    onSuccess: async (updatedPatient) => {
+      toast.success("Patient archived", {
+        description: "This patient is now hidden from the active registry.",
+      });
+
+      queryClient.setQueryData(
+        queryKeys.patients.detail(updatedPatient.id),
+        updatedPatient,
+      );
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.patients.all,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.patients.detail(updatedPatient.id),
+        }),
+      ]);
+    },
+    onError: (error) => {
+      toast.error("Could not archive patient", {
+        description:
+          error instanceof ApiClientError
+            ? error.message
+            : "Unexpected error while archiving patient.",
+      });
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: restorePatient,
+    onSuccess: async (updatedPatient) => {
+      toast.success("Patient restored", {
+        description: "This patient is available in the active registry again.",
+      });
+
+      queryClient.setQueryData(
+        queryKeys.patients.detail(updatedPatient.id),
+        updatedPatient,
+      );
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.patients.all,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.patients.detail(updatedPatient.id),
+        }),
+      ]);
+    },
+    onError: (error) => {
+      toast.error("Could not restore patient", {
+        description:
+          error instanceof ApiClientError
+            ? error.message
+            : "Unexpected error while restoring patient.",
+      });
+    },
   });
 
   const patientErrorMessage =
@@ -89,6 +154,9 @@ export function PatientDetailsPage() {
     return null;
   }
 
+  const isArchiveActionPending =
+    archiveMutation.isPending || restoreMutation.isPending;
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
       <div className="flex items-center justify-between gap-4">
@@ -107,14 +175,62 @@ export function PatientDetailsPage() {
             </Link>
           </Button>
 
-          <UploadScanDialog patientId={patient.id} />
+          {patient.archived ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => restoreMutation.mutate(patient.id)}
+              disabled={isArchiveActionPending}
+              aria-label="Restore patient"
+              title="Restore patient"
+            >
+              <RotateCcw
+                className={
+                  restoreMutation.isPending ? "size-4 animate-spin" : "size-4"
+                }
+              />
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => archiveMutation.mutate(patient.id)}
+              disabled={isArchiveActionPending}
+              aria-label="Archive patient"
+              title="Archive patient"
+            >
+              <Archive
+                className={
+                  archiveMutation.isPending ? "size-4 animate-pulse" : "size-4"
+                }
+              />
+            </Button>
+          )}
+
+          {!patient.archived && <UploadScanDialog patientId={patient.id} />}
         </div>
       </div>
+
+      {patient.archived && (
+        <Alert>
+          <AlertTitle>Patient archived</AlertTitle>
+          <AlertDescription>
+            This patient is archived. Historical analyses remain available, but
+            new scans cannot be uploaded until the patient is restored.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card>
         <CardHeader>
           <div>
-            <Badge variant="secondary">Patient</Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary">Patient</Badge>
+
+              {patient.archived && <Badge variant="outline">Archived</Badge>}
+            </div>
 
             <CardTitle className="mt-4 text-3xl">
               {patient.firstName} {patient.lastName}
@@ -126,7 +242,11 @@ export function PatientDetailsPage() {
           </div>
 
           <CardAction>
-            <Badge variant="outline">{patient.medicalRecordNumber}</Badge>
+            <div className="flex flex-wrap justify-end gap-2">
+              {patient.archived && <Badge variant="secondary">Archived</Badge>}
+
+              <Badge variant="outline">{patient.medicalRecordNumber}</Badge>
+            </div>
           </CardAction>
         </CardHeader>
 
@@ -165,6 +285,17 @@ export function PatientDetailsPage() {
                 {formatDateTime(patient.createdAt)}
               </dd>
             </div>
+
+            {patient.archivedAt && (
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">
+                  Archived at
+                </dt>
+                <dd className="mt-1 text-sm font-semibold">
+                  {formatDateTime(patient.archivedAt)}
+                </dd>
+              </div>
+            )}
 
             <div className="sm:col-span-2 lg:col-span-4">
               <dt className="text-sm font-medium text-muted-foreground">

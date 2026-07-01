@@ -5,6 +5,7 @@ import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisListIt
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysisDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.InvalidAnalysisStateException;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.error.InvalidPatientStateException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.validation.FileUploadValidator;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.AnalysisEventPublisher;
@@ -46,6 +47,12 @@ public class AnalysisService {
 
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new ResourceNotFoundException("Patient not found"));
+
+        if (patient.isArchived()) {
+            throw new InvalidPatientStateException(
+                    "Cannot upload scans for archived patient."
+            );
+        }
 
         UUID analysisId = UUID.randomUUID();
         String objectKey = buildObjectKey(analysisId, file.getOriginalFilename());

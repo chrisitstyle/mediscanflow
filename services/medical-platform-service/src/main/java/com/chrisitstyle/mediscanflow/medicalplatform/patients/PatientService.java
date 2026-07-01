@@ -8,7 +8,6 @@ import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientRespons
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.UUID;
@@ -40,10 +39,20 @@ public class PatientService {
     }
 
     @Transactional(readOnly = true)
-    public List<PatientResponseDTO> findAll(String search) {
-        List<Patient> patients = StringUtils.hasText(search)
-                ? patientRepository.searchByText(search.trim())
-                : patientRepository.findAllByOrderByCreatedAtDesc();
+    public List<PatientResponseDTO> findAll(String search, boolean includeArchived) {
+        String normalizedSearch = search == null ? null : search.trim();
+
+        List<Patient> patients;
+
+        if (normalizedSearch == null || normalizedSearch.isBlank()) {
+            patients = includeArchived
+                    ? patientRepository.findAllByOrderByCreatedAtDesc()
+                    : patientRepository.findAllByArchivedFalseOrderByCreatedAtDesc();
+        } else {
+            patients = includeArchived
+                    ? patientRepository.searchByText(normalizedSearch)
+                    : patientRepository.searchActiveByText(normalizedSearch);
+        }
 
         return patients.stream()
                 .map(this::toResponseDTO)
@@ -64,6 +73,26 @@ public class PatientService {
         return toResponseDTO(patientRepository.save(patient));
     }
 
+    @Transactional
+    public PatientResponseDTO archivePatient(UUID patientId) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + patientId));
+
+        patient.archive();
+
+        return toResponseDTO(patient);
+    }
+
+    @Transactional
+    public PatientResponseDTO restorePatient(UUID patientId) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + patientId));
+
+        patient.restore();
+
+        return toResponseDTO(patient);
+    }
+
     @Transactional(readOnly = true)
     public PatientResponseDTO findById(UUID id) {
         Patient patient = patientRepository.findById(id)
@@ -79,7 +108,9 @@ public class PatientService {
                 patient.getLastName(),
                 patient.getDateOfBirth(),
                 patient.getMedicalRecordNumber(),
-                patient.getCreatedAt()
+                patient.getCreatedAt(),
+                patient.isArchived(),
+                patient.getArchivedAt()
         );
     }
 }
