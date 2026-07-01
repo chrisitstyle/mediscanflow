@@ -68,60 +68,124 @@ export function PatientAnalysesList({ analyses }: PatientAnalysesListProps) {
             description="Upload the first scan for this patient to start asynchronous AI analysis."
           />
         ) : (
-          <div className="overflow-hidden rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>File</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Model</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Details</TableHead>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {analyses.map((analysis) => (
-                  <TableRow key={analysis.id}>
-                    <TableCell>
-                      <div className="font-medium">
+          <>
+            <div className="grid gap-3 md:hidden">
+              {analyses.map((analysis) => (
+                <div
+                  key={analysis.id}
+                  className="rounded-lg border bg-card p-4 text-card-foreground"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <h3 className="truncate font-medium">
                         {analysis.originalFileName}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
+                      </h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
                         ID: {analysis.id}
-                      </div>
-                    </TableCell>
+                      </p>
+                    </div>
 
-                    <TableCell>
-                      <AnalysisStatusBadge status={analysis.status} />
-                    </TableCell>
+                    <AnalysisStatusBadge status={analysis.status} />
+                  </div>
 
-                    <TableCell>
-                      <div className="text-sm">{analysis.modelName}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {analysis.modelVersion}
-                      </div>
-                    </TableCell>
+                  <div className="mt-4 grid gap-3 text-sm">
+                    <MobileMetaRow
+                      label="Model"
+                      value={`${analysis.modelName} / ${analysis.modelVersion}`}
+                    />
+                    <MobileMetaRow
+                      label="Size"
+                      value={formatFileSize(analysis.fileSizeBytes)}
+                    />
+                    <MobileMetaRow
+                      label="Created"
+                      value={formatDateTime(analysis.createdAt)}
+                    />
+                  </div>
 
-                    <TableCell>
-                      {formatFileSize(analysis.fileSizeBytes)}
-                    </TableCell>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="mt-4 w-full"
+                  >
+                    <Link href={`/analyses/${analysis.id}`}>View details</Link>
+                  </Button>
+                </div>
+              ))}
+            </div>
 
-                    <TableCell>{formatDateTime(analysis.createdAt)}</TableCell>
-
-                    <TableCell className="text-right">
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/analyses/${analysis.id}`}>View</Link>
-                      </Button>
-                    </TableCell>
+            <div className="hidden overflow-hidden rounded-lg border md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>File</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Model</TableHead>
+                    <TableHead>Size</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Details</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+
+                <TableBody>
+                  {analyses.map((analysis) => (
+                    <TableRow key={analysis.id}>
+                      <TableCell>
+                        <div className="font-medium">
+                          {analysis.originalFileName}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          ID: {analysis.id}
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <AnalysisStatusBadge status={analysis.status} />
+                      </TableCell>
+
+                      <TableCell>
+                        <div className="text-sm">{analysis.modelName}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {analysis.modelVersion}
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        {formatFileSize(analysis.fileSizeBytes)}
+                      </TableCell>
+
+                      <TableCell>
+                        {formatDateTime(analysis.createdAt)}
+                      </TableCell>
+
+                      <TableCell className="text-right">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/analyses/${analysis.id}`}>View</Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+type MobileMetaRowProps = {
+  label: string;
+  value: string;
+};
+
+function MobileMetaRow({ label, value }: MobileMetaRowProps) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-right font-medium">{value}</span>
+    </div>
   );
 }

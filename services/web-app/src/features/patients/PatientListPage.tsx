@@ -162,43 +162,80 @@ export function PatientListPage() {
           )}
 
           {!isLoading && !isError && hasPatients && (
-            <div className="overflow-hidden rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Patient</TableHead>
-                    <TableHead>Medical record number</TableHead>
-                    <TableHead>Date of birth</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Details</TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {patients.map((patient) => (
-                    <TableRow key={patient.id}>
-                      <TableCell>
-                        <div className="font-medium">
+            <>
+              <div className="grid gap-3 md:hidden">
+                {patients.map((patient) => (
+                  <div
+                    key={patient.id}
+                    className="rounded-lg border bg-card p-4 text-card-foreground"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="font-medium">
                           {patient.firstName} {patient.lastName}
-                        </div>
-                      </TableCell>
+                        </h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {patient.medicalRecordNumber}
+                        </p>
+                      </div>
 
-                      <TableCell>{patient.medicalRecordNumber}</TableCell>
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/patients/${patient.id}`}>Open</Link>
+                      </Button>
+                    </div>
 
-                      <TableCell>{formatDate(patient.dateOfBirth)}</TableCell>
+                    <div className="mt-4 grid gap-3 text-sm">
+                      <MobileMetaRow
+                        label="Date of birth"
+                        value={formatDate(patient.dateOfBirth)}
+                      />
+                      <MobileMetaRow
+                        label="Created"
+                        value={formatDate(patient.createdAt)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-                      <TableCell>{formatDate(patient.createdAt)}</TableCell>
-
-                      <TableCell className="text-right">
-                        <Button asChild variant="outline" size="sm">
-                          <Link href={`/patients/${patient.id}`}>Open</Link>
-                        </Button>
-                      </TableCell>
+              <div className="hidden overflow-hidden rounded-lg border md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Patient</TableHead>
+                      <TableHead>Medical record number</TableHead>
+                      <TableHead>Date of birth</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Details</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+
+                  <TableBody>
+                    {patients.map((patient) => (
+                      <TableRow key={patient.id}>
+                        <TableCell>
+                          <div className="font-medium">
+                            {patient.firstName} {patient.lastName}
+                          </div>
+                        </TableCell>
+
+                        <TableCell>{patient.medicalRecordNumber}</TableCell>
+
+                        <TableCell>{formatDate(patient.dateOfBirth)}</TableCell>
+
+                        <TableCell>{formatDate(patient.createdAt)}</TableCell>
+
+                        <TableCell className="text-right">
+                          <Button asChild variant="outline" size="sm">
+                            <Link href={`/patients/${patient.id}`}>Open</Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
 
           {isFetching && !isLoading && (
@@ -208,6 +245,20 @@ export function PatientListPage() {
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+type MobileMetaRowProps = {
+  label: string;
+  value: string;
+};
+
+function MobileMetaRow({ label, value }: MobileMetaRowProps) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-right font-medium">{value}</span>
     </div>
   );
 }
