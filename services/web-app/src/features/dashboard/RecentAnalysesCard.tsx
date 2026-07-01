@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FileImage } from "lucide-react";
+import { Clock3 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { getRecentAnalyses } from "@/api/analysesApi";
-import { ApiClientError } from "@/lib/apiClient";
 import { AnalysisStatusBadge } from "@/components/status/AnalysisStatusBadge";
-
+import { EmptyState } from "@/components/EmptyState";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ApiClientError } from "@/lib/apiClient";
 import { queryKeys } from "@/lib/queryKeys";
 
 function formatDateTime(value: string | null) {
@@ -53,16 +53,14 @@ function formatFileSize(bytes: number) {
 }
 
 export function RecentAnalysesCard() {
-  const {
-    data: analyses,
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: queryKeys.analyses.recent(),
     queryFn: () => getRecentAnalyses(10),
     refetchInterval: 10_000,
   });
+
+  const analyses = data ?? [];
+  const hasAnalyses = analyses.length > 0;
 
   const errorMessage =
     error instanceof ApiClientError
@@ -94,28 +92,20 @@ export function RecentAnalysesCard() {
           </Alert>
         )}
 
-        {!isLoading && !isError && analyses?.length === 0 && (
-          <div className="flex min-h-80 flex-col items-center justify-center rounded-lg border border-dashed p-10 text-center">
-            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-              <FileImage className="size-6 text-muted-foreground" />
-            </div>
-
-            <h2 className="mt-4 text-lg font-semibold">
-              No analyses submitted yet
-            </h2>
-
-            <p className="mt-2 max-w-md text-sm text-muted-foreground">
-              Create a patient and upload a scan to start AI-powered image
-              analysis.
-            </p>
-
-            <Button asChild className="mt-6" variant="outline">
+        {!isLoading && !isError && !hasAnalyses && (
+          <EmptyState
+            icon={<Clock3 className="size-6" />}
+            title="No recent analyses"
+            description="Recent AI analyses will appear here after you upload medical scans."
+            className="min-h-80"
+          >
+            <Button asChild variant="outline">
               <Link href="/patients">Open patients</Link>
             </Button>
-          </div>
+          </EmptyState>
         )}
 
-        {!isLoading && !isError && analyses && analyses.length > 0 && (
+        {!isLoading && !isError && hasAnalyses && (
           <div className="overflow-hidden rounded-lg border">
             <Table>
               <TableHeader>

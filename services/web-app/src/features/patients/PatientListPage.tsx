@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Search, UserPlus, Users, X } from "lucide-react";
+import { Search, SearchX, UserPlus, UsersRound, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { getPatients } from "@/api/patientsApi";
-import { ApiClientError } from "@/lib/apiClient";
-
+import { EmptyState } from "@/components/EmptyState";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ApiClientError } from "@/lib/apiClient";
 import { queryKeys } from "@/lib/queryKeys";
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
@@ -56,22 +56,17 @@ export function PatientListPage() {
   const debouncedSearch = useDebouncedValue(search, 300);
   const normalizedSearch = debouncedSearch.trim();
 
-  const {
-    data: patients,
-    isLoading,
-    isFetching,
-    isError,
-    error,
-  } = useQuery({
+  const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: queryKeys.patients.list(normalizedSearch),
     queryFn: () => getPatients({ search: normalizedSearch }),
   });
 
+  const patients = data ?? [];
+  const hasSearch = normalizedSearch.length > 0;
+  const hasPatients = patients.length > 0;
+
   const errorMessage =
     error instanceof ApiClientError ? error.message : "Could not load patients";
-
-  const hasSearch = search.trim().length > 0;
-  const hasPatients = patients && patients.length > 0;
 
   return (
     <div className="space-y-6">
@@ -110,7 +105,7 @@ export function PatientListPage() {
               className="pl-9 pr-10"
             />
 
-            {hasSearch && (
+            {search.trim().length > 0 && (
               <Button
                 type="button"
                 variant="ghost"
@@ -134,27 +129,36 @@ export function PatientListPage() {
           {isLoading && <PatientListSkeleton />}
 
           {!isLoading && !isError && !hasPatients && (
-            <div className="flex min-h-80 flex-col items-center justify-center rounded-lg border border-dashed p-10 text-center">
-              <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-                <Users className="size-6 text-muted-foreground" />
-              </div>
-
-              <h2 className="mt-4 text-lg font-semibold">
-                {normalizedSearch ? "No patients found" : "No patients yet"}
-              </h2>
-
-              <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                {normalizedSearch
-                  ? "Try a different name or medical record number."
-                  : "Create the first patient to start uploading medical scans."}
-              </p>
-
-              {!normalizedSearch && (
-                <Button asChild className="mt-6">
+            <EmptyState
+              icon={
+                hasSearch ? (
+                  <SearchX className="size-6" />
+                ) : (
+                  <UsersRound className="size-6" />
+                )
+              }
+              title={hasSearch ? "No patients found" : "No patients yet"}
+              description={
+                hasSearch
+                  ? "No patient matches this search. Try another name or medical record number."
+                  : "Create the first patient record to start uploading scans and running AI analysis."
+              }
+              className="min-h-80"
+            >
+              {hasSearch ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setSearch("")}
+                >
+                  Clear search
+                </Button>
+              ) : (
+                <Button asChild>
                   <Link href="/patients/new">Create patient</Link>
                 </Button>
               )}
-            </div>
+            </EmptyState>
           )}
 
           {!isLoading && !isError && hasPatients && (

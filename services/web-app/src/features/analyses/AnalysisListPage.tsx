@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FileImage } from "lucide-react";
+import { FileSearch } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { getAnalyses } from "@/api/analysesApi";
 import { AnalysisStatusBadge } from "@/components/status/AnalysisStatusBadge";
-import { ApiClientError } from "@/lib/apiClient";
-
+import { EmptyState } from "@/components/EmptyState";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ApiClientError } from "@/lib/apiClient";
 import { queryKeys } from "@/lib/queryKeys";
 
 function formatDateTime(value: string | null) {
@@ -52,22 +52,17 @@ function formatFileSize(bytes: number) {
 }
 
 export function AnalysisListPage() {
-  const {
-    data: analyses,
-    isLoading,
-    isFetching,
-    isError,
-    error,
-  } = useQuery({
+  const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: queryKeys.analyses.list(),
     queryFn: getAnalyses,
     refetchInterval: 10_000,
   });
 
+  const analyses = data ?? [];
+  const hasAnalyses = analyses.length > 0;
+
   const errorMessage =
     error instanceof ApiClientError ? error.message : "Could not load analyses";
-
-  const hasAnalyses = analyses && analyses.length > 0;
 
   return (
     <div className="space-y-6">
@@ -97,24 +92,16 @@ export function AnalysisListPage() {
           {isLoading && <AnalysisListSkeleton />}
 
           {!isLoading && !isError && !hasAnalyses && (
-            <div className="flex min-h-80 flex-col items-center justify-center rounded-lg border border-dashed p-10 text-center">
-              <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-                <FileImage className="size-6 text-muted-foreground" />
-              </div>
-
-              <h2 className="mt-4 text-lg font-semibold">
-                No analyses submitted yet
-              </h2>
-
-              <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                Create a patient and upload a scan to start AI-powered image
-                analysis.
-              </p>
-
-              <Button asChild className="mt-6" variant="outline">
-                <Link href="/patients">Open patients</Link>
+            <EmptyState
+              icon={<FileSearch className="size-6" />}
+              title="No analyses yet"
+              description="Upload a scan from a patient profile to create the first AI analysis."
+              className="min-h-80"
+            >
+              <Button asChild variant="outline">
+                <Link href="/patients">Go to patients</Link>
               </Button>
-            </div>
+            </EmptyState>
           )}
 
           {!isLoading && !isError && hasAnalyses && (
