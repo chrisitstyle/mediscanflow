@@ -1,5 +1,6 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisListItemDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysisDTO;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -30,4 +31,23 @@ public interface AnalysisRepository extends JpaRepository<Analysis, UUID> {
             ORDER BY analysis.createdAt DESC
             """)
     List<RecentAnalysisDTO> findRecentAnalyses(Pageable pageable);
+
+    @Query("""
+        SELECT new com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisListItemDTO(
+            analysis.id,
+            patient.id,
+            CONCAT(patient.firstName, ' ', patient.lastName),
+            analysis.status,
+            analysis.originalFileName,
+            analysis.modelName,
+            analysis.modelVersion,
+            analysis.fileSizeBytes,
+            analysis.createdAt,
+            analysis.completedAt
+        )
+        FROM Analysis analysis
+        JOIN analysis.patient patient
+        ORDER BY analysis.createdAt DESC
+        """)
+    List<AnalysisListItemDTO> findAllAnalysisListItems();
 }

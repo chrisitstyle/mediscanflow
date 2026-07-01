@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/", label: "Dashboard" },
   { href: "/patients", label: "Patients" },
+  { href: "/analyses", label: "Analyses" },
 ];
 
 export function AppNavbar() {

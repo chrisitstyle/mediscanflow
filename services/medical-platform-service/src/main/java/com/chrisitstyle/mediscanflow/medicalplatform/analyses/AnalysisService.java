@@ -1,6 +1,7 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisDetectionDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisListItemDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysisDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.InvalidAnalysisStateException;
@@ -75,6 +76,11 @@ public class AnalysisService {
                 .orElseThrow(() -> new ResourceNotFoundException("Analysis not found"));
 
         return toResponseDTO(analysis);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AnalysisListItemDTO> findAllAnalyses() {
+        return analysisRepository.findAllAnalysisListItems();
     }
 
     @Transactional(readOnly = true)
