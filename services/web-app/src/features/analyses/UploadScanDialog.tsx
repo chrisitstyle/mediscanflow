@@ -4,6 +4,7 @@ import type React from "react";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { uploadScan } from "@/api/analysesApi";
 import { ApiClientError } from "@/lib/apiClient";
@@ -27,6 +28,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { queryKeys } from "@/lib/queryKeys";
 
 type UploadScanDialogProps = {
   patientId: string;
@@ -79,14 +81,40 @@ export function UploadScanDialog({ patientId }: UploadScanDialogProps) {
   const mutation = useMutation({
     mutationFn: uploadScan,
     onSuccess: async (analysis) => {
-      await queryClient.invalidateQueries({
-        queryKey: ["patients", patientId, "analyses"],
+      toast.success("Scan uploaded", {
+        description: "AI analysis was queued successfully.",
       });
 
-      queryClient.setQueryData(["analyses", analysis.id], analysis);
+      queryClient.setQueryData(
+        queryKeys.analyses.detail(analysis.id),
+        analysis,
+      );
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.patients.analyses(patientId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboard.summary(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.analyses.recent(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.analyses.list(),
+        }),
+      ]);
 
       setOpen(false);
       router.push(`/analyses/${analysis.id}`);
+    },
+    onError: (error) => {
+      toast.error("Upload failed", {
+        description:
+          error instanceof ApiClientError
+            ? error.message
+            : "Unexpected error while uploading scan.",
+      });
     },
   });
 

@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { queryKeys } from "@/lib/queryKeys";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en", {
@@ -41,13 +42,13 @@ export function PatientDetailsPage() {
   const patientId = params.patientId;
 
   const patientQuery = useQuery({
-    queryKey: ["patients", patientId],
+    queryKey: queryKeys.patients.detail(patientId),
     queryFn: () => getPatient(patientId),
     enabled: !!patientId,
   });
 
   const analysesQuery = useQuery({
-    queryKey: ["patients", patientId, "analyses"],
+    queryKey: queryKeys.patients.analyses(patientId),
     queryFn: () => getPatientAnalyses(patientId),
     enabled: !!patientId,
   });

@@ -27,6 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { queryKeys } from "@/lib/queryKeys";
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -62,7 +63,7 @@ export function PatientListPage() {
     isError,
     error,
   } = useQuery({
-    queryKey: ["patients", normalizedSearch],
+    queryKey: queryKeys.patients.list(normalizedSearch),
     queryFn: () => getPatients({ search: normalizedSearch }),
   });
 

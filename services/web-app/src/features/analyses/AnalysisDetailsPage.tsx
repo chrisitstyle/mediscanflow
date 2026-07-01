@@ -21,6 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { queryKeys } from "@/lib/queryKeys";
 
 const POLLING_STATUSES = ["UPLOADED", "QUEUED", "PROCESSING"];
 
@@ -59,7 +60,7 @@ export function AnalysisDetailsPage() {
     isError,
     error,
   } = useQuery({
-    queryKey: ["analysis", analysisId],
+    queryKey: queryKeys.analyses.detail(analysisId),
     queryFn: () => getAnalysis(analysisId),
     refetchInterval: (query) => {
       const currentAnalysis = query.state.data;
@@ -79,24 +80,28 @@ export function AnalysisDetailsPage() {
     mutationFn: retryAnalysis,
     onSuccess: (retriedAnalysis) => {
       queryClient.setQueryData(
-        ["analysis", retriedAnalysis.id],
+        queryKeys.analyses.detail(retriedAnalysis.id),
         retriedAnalysis,
       );
 
       void queryClient.invalidateQueries({
-        queryKey: ["analysis", retriedAnalysis.id],
+        queryKey: queryKeys.analyses.detail(retriedAnalysis.id),
       });
 
       void queryClient.invalidateQueries({
-        queryKey: ["patient-analyses", retriedAnalysis.patientId],
+        queryKey: queryKeys.patients.analyses(retriedAnalysis.patientId),
       });
 
       void queryClient.invalidateQueries({
-        queryKey: ["dashboard", "summary"],
+        queryKey: queryKeys.dashboard.summary(),
       });
 
       void queryClient.invalidateQueries({
-        queryKey: ["dashboard", "recent-analyses"],
+        queryKey: queryKeys.analyses.recent(),
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.analyses.list(),
       });
     },
   });

@@ -17,6 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { queryKeys } from "@/lib/queryKeys";
 
 type ComponentItem = {
   key: string;
@@ -48,7 +49,7 @@ function getComponentStatus(component?: SystemComponentStatus): string {
 
 export function SystemStatusPopover() {
   const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ["system-status"],
+    queryKey: queryKeys.system.status(),
     queryFn: getSystemStatus,
     refetchInterval: 10_000,
   });

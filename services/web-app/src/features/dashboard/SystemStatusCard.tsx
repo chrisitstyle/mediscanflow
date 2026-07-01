@@ -18,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { queryKeys } from "@/lib/queryKeys";
 
 type ComponentItem = {
   key: string;
@@ -49,7 +50,7 @@ function getComponentStatus(component?: SystemComponentStatus): string {
 
 export function SystemStatusCard() {
   const { data, isLoading, isError, error, isFetching, refetch } = useQuery({
-    queryKey: ["system-status"],
+    queryKey: queryKeys.system.status(),
     queryFn: getSystemStatus,
     refetchInterval: 10_000,
   });
