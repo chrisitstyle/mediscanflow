@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { queryKeys } from "@/lib/queryKeys";
+import { AnalysisImagePreviewDialog } from "@/features/analyses/AnalysisImagePreviewDialog";
 
 const POLLING_STATUSES = ["UPLOADED", "QUEUED", "PROCESSING"];
 
@@ -336,14 +337,11 @@ function ImagePreview({ title, imageUrl, fallback }: ImagePreviewProps) {
       <h3 className="text-sm font-medium">{title}</h3>
 
       {imageUrl ? (
-        <div className="overflow-hidden rounded-lg border bg-muted">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl}
-            alt={title}
-            className="aspect-video w-full object-contain"
-          />
-        </div>
+        <AnalysisImagePreviewDialog
+          title={title}
+          imageUrl={imageUrl}
+          alt={title}
+        />
       ) : (
         <div className="flex aspect-video items-center justify-center rounded-lg border border-dashed bg-muted/40 p-6 text-center">
           <div>
