@@ -8,8 +8,22 @@ export type CreatePatientInput = {
   medicalRecordNumber: string;
 };
 
-export function getPatients(): Promise<Patient[]> {
-  return apiFetch<Patient[]>("/patients");
+export type GetPatientsInput = {
+  search?: string;
+};
+
+export function getPatients(input: GetPatientsInput = {}): Promise<Patient[]> {
+  const search = input.search?.trim();
+
+  if (!search) {
+    return apiFetch<Patient[]>("/patients");
+  }
+
+  const searchParams = new URLSearchParams({
+    search,
+  });
+
+  return apiFetch<Patient[]>(`/patients?${searchParams.toString()}`);
 }
 
 export function getPatient(patientId: string): Promise<Patient> {
