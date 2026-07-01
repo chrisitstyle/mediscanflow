@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getPatient } from "@/api/patientsApi";
 import { getPatientAnalyses } from "@/api/analysesApi";
 import { PatientAnalysesList } from "@/features/analyses/PatientAnalysesList";
+import { UploadScanDialog } from "@/features/analyses/UploadScanDialog";
 import { ApiClientError } from "@/lib/apiClient";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -93,7 +94,7 @@ export function PatientDetailsPage() {
           <Link href="/patients">Back to patients</Link>
         </Button>
 
-        <Button disabled>Upload scan</Button>
+        <UploadScanDialog patientId={patient.id} />
       </div>
 
       <Card>
@@ -167,6 +168,7 @@ export function PatientDetailsPage() {
             <CardTitle>Analyses</CardTitle>
             <CardDescription>Loading patient analyses...</CardDescription>
           </CardHeader>
+
           <CardContent>
             <div className="flex flex-col gap-3">
               <Skeleton className="h-10 w-full" />
