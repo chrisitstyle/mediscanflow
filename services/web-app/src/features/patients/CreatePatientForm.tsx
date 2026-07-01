@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { createPatient, type CreatePatientInput } from "@/api/patientsApi";
 import { ApiClientError } from "@/lib/apiClient";
@@ -75,11 +76,25 @@ export function CreatePatientForm() {
 
   const mutation = useMutation({
     mutationFn: createPatient,
-    onSuccess: async () => {
+    onSuccess: async (patient) => {
+      toast.success("Patient created", {
+        description: `${patient.firstName} ${patient.lastName} was added to the registry.`,
+      });
+
       await queryClient.invalidateQueries({ queryKey: ["patients"] });
+
       router.push("/patients");
     },
     onError: (error) => {
+      const description =
+        error instanceof ApiClientError
+          ? error.message
+          : "Unexpected error while creating patient.";
+
+      toast.error("Could not create patient", {
+        description,
+      });
+
       if (error instanceof ApiClientError) {
         setErrors((previousErrors) => ({
           ...previousErrors,
