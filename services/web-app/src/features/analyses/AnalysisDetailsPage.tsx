@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { FileImage, RotateCcw } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { getAnalysis } from "@/api/analysesApi";
-import { DetectionTable } from "@/features/analyses/DetectionTable";
-import { ApiClientError } from "@/lib/apiClient";
-import type { AnalysisStatus } from "@/types/analysis";
+import { getAnalysis, retryAnalysis } from "@/api/analysesApi";
 import { AnalysisStatusBadge } from "@/components/status/AnalysisStatusBadge";
+import { ApiClientError } from "@/lib/apiClient";
+
+import { DetectionTable } from "@/features/analyses/DetectionTable";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,23 +22,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-function getStatusVariant(status: AnalysisStatus) {
-  if (status === "COMPLETED") {
-    return "default";
-  }
-
-  if (status === "FAILED") {
-    return "destructive";
-  }
-
-  return "secondary";
-}
-
-function shouldPoll(status?: AnalysisStatus) {
-  return (
-    status === "QUEUED" || status === "PROCESSING" || status === "UPLOADED"
-  );
-}
+const POLLING_STATUSES = ["UPLOADED", "QUEUED", "PROCESSING"];
 
 function formatDateTime(value: string | null) {
   if (!value) {
@@ -67,227 +51,316 @@ export function AnalysisDetailsPage() {
   const params = useParams<{ analysisId: string }>();
   const analysisId = params.analysisId;
 
-  const analysisQuery = useQuery({
-    queryKey: ["analyses", analysisId],
+  const queryClient = useQueryClient();
+
+  const {
+    data: analysis,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["analysis", analysisId],
     queryFn: () => getAnalysis(analysisId),
-    enabled: !!analysisId,
     refetchInterval: (query) => {
-      const status = query.state.data?.status;
-      return shouldPoll(status) ? 3000 : false;
+      const currentAnalysis = query.state.data;
+
+      if (
+        currentAnalysis &&
+        POLLING_STATUSES.includes(currentAnalysis.status)
+      ) {
+        return 3_000;
+      }
+
+      return false;
+    },
+  });
+
+  const retryMutation = useMutation({
+    mutationFn: retryAnalysis,
+    onSuccess: (retriedAnalysis) => {
+      queryClient.setQueryData(
+        ["analysis", retriedAnalysis.id],
+        retriedAnalysis,
+      );
+
+      void queryClient.invalidateQueries({
+        queryKey: ["analysis", retriedAnalysis.id],
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: ["patient-analyses", retriedAnalysis.patientId],
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: ["dashboard", "summary"],
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: ["dashboard", "recent-analyses"],
+      });
     },
   });
 
   const errorMessage =
-    analysisQuery.error instanceof ApiClientError
-      ? analysisQuery.error.message
-      : "Could not load analysis";
+    error instanceof ApiClientError ? error.message : "Could not load analysis";
 
-  if (analysisQuery.isLoading) {
-    return (
-      <main className="mx-auto w-full max-w-6xl px-6 py-8">
-        <AnalysisDetailsSkeleton />
-      </main>
-    );
+  const retryErrorMessage =
+    retryMutation.error instanceof ApiClientError
+      ? retryMutation.error.message
+      : "Could not retry this analysis";
+
+  if (isLoading) {
+    return <AnalysisDetailsSkeleton />;
   }
 
-  if (analysisQuery.isError) {
+  if (isError) {
     return (
-      <main className="mx-auto w-full max-w-6xl px-6 py-8">
-        <Alert variant="destructive">
-          <AlertTitle>Could not load analysis</AlertTitle>
-          <AlertDescription>{errorMessage}</AlertDescription>
-        </Alert>
-      </main>
+      <Alert variant="destructive">
+        <AlertTitle>Analysis not available</AlertTitle>
+        <AlertDescription>{errorMessage}</AlertDescription>
+      </Alert>
     );
   }
-
-  const analysis = analysisQuery.data;
 
   if (!analysis) {
-    return null;
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>Analysis not found</AlertTitle>
+        <AlertDescription>
+          The requested analysis could not be loaded.
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
-      <div className="flex items-center justify-between gap-4">
-        <Button asChild variant="outline" size="sm">
-          <Link href={`/patients/${analysis.patientId}`}>Back to patient</Link>
-        </Button>
+    <div className="space-y-6">
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Analysis details
+            </h1>
 
-        <AnalysisStatusBadge status={analysis.status} />
-      </div>
+            <AnalysisStatusBadge status={analysis.status} />
+          </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-3xl">Analysis details</CardTitle>
-          <CardDescription>
-            Review uploaded scan, AI result image, detections and model
-            metadata.
-          </CardDescription>
-        </CardHeader>
+          <p className="mt-2 text-muted-foreground">
+            AI scan analysis for{" "}
+            <span className="font-medium">{analysis.originalFileName}</span>.
+          </p>
+        </div>
 
-        <CardContent>
-          <dl className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <dt className="text-sm font-medium text-muted-foreground">
-                Original file
-              </dt>
-              <dd className="mt-1 text-sm font-semibold">
-                {analysis.originalFileName}
-              </dd>
-            </div>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href={`/patients/${analysis.patientId}`}>
+              Back to patient
+            </Link>
+          </Button>
 
-            <div>
-              <dt className="text-sm font-medium text-muted-foreground">
-                File size
-              </dt>
-              <dd className="mt-1 text-sm font-semibold">
-                {formatFileSize(analysis.fileSizeBytes)}
-              </dd>
-            </div>
-
-            <div>
-              <dt className="text-sm font-medium text-muted-foreground">
-                Created
-              </dt>
-              <dd className="mt-1 text-sm font-semibold">
-                {formatDateTime(analysis.createdAt)}
-              </dd>
-            </div>
-
-            <div>
-              <dt className="text-sm font-medium text-muted-foreground">
-                Completed
-              </dt>
-              <dd className="mt-1 text-sm font-semibold">
-                {formatDateTime(analysis.completedAt)}
-              </dd>
-            </div>
-
-            <div>
-              <dt className="text-sm font-medium text-muted-foreground">
-                Model
-              </dt>
-              <dd className="mt-1 text-sm font-semibold">
-                {analysis.modelName}
-              </dd>
-              <dd className="text-xs text-muted-foreground">
-                {analysis.modelVersion}
-              </dd>
-            </div>
-
-            <div className="sm:col-span-2 lg:col-span-3">
-              <dt className="text-sm font-medium text-muted-foreground">
-                Analysis ID
-              </dt>
-              <dd className="mt-1 break-all font-mono text-sm">
-                {analysis.id}
-              </dd>
-            </div>
-          </dl>
-
-          {analysis.errorMessage && (
-            <Alert variant="destructive" className="mt-6">
-              <AlertTitle>Analysis failed</AlertTitle>
-              <AlertDescription>{analysis.errorMessage}</AlertDescription>
-            </Alert>
+          {analysis.status === "FAILED" && (
+            <Button
+              type="button"
+              onClick={() => retryMutation.mutate(analysis.id)}
+              disabled={retryMutation.isPending}
+            >
+              <RotateCcw
+                className={
+                  retryMutation.isPending ? "size-4 animate-spin" : "size-4"
+                }
+              />
+              {retryMutation.isPending ? "Retrying..." : "Retry analysis"}
+            </Button>
           )}
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Original image</CardTitle>
-            <CardDescription>Uploaded scan image.</CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            {analysis.originalImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={analysis.originalImageUrl}
-                alt="Original scan"
-                className="max-h-130 w-full rounded-lg border object-contain"
-              />
-            ) : (
-              <ImagePlaceholder message="Original image URL is not available." />
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Result image</CardTitle>
-            <CardDescription>
-              Annotated image generated by the AI worker.
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            {analysis.resultImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={analysis.resultImageUrl}
-                alt="Annotated result scan"
-                className="max-h-130 w-full rounded-lg border object-contain"
-              />
-            ) : (
-              <ImagePlaceholder message="Result image is not available yet." />
-            )}
-          </CardContent>
-        </Card>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Detections</CardTitle>
-          <CardDescription>
-            Bounding boxes returned by the AI inference worker.
-          </CardDescription>
-        </CardHeader>
+      {analysis.status === "FAILED" && (
+        <Alert variant="destructive">
+          <AlertTitle>AI processing failed</AlertTitle>
+          <AlertDescription>
+            {analysis.errorMessage ??
+              "The AI worker could not complete this analysis."}
+          </AlertDescription>
+        </Alert>
+      )}
 
-        <CardContent>
+      {retryMutation.isError && (
+        <Alert variant="destructive">
+          <AlertTitle>Retry failed</AlertTitle>
+          <AlertDescription>{retryErrorMessage}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Images</CardTitle>
+              <CardDescription>
+                Original scan and AI-generated result image.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <ImagePreview
+                  title="Original scan"
+                  imageUrl={analysis.originalImageUrl}
+                  fallback="Original image is not available."
+                />
+
+                <ImagePreview
+                  title="AI result"
+                  imageUrl={analysis.resultImageUrl}
+                  fallback={
+                    analysis.status === "COMPLETED"
+                      ? "Result image is not available."
+                      : "Result image will appear after processing."
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <DetectionTable detections={analysis.detections} />
-        </CardContent>
-      </Card>
-    </main>
-  );
-}
+        </div>
 
-function ImagePlaceholder({ message }: { message: string }) {
-  return (
-    <div className="flex min-h-80 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-      {message}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Metadata</CardTitle>
+              <CardDescription>Analysis request details.</CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-4 text-sm">
+              <MetadataRow
+                label="File name"
+                value={analysis.originalFileName}
+              />
+              <MetadataRow
+                label="File size"
+                value={formatFileSize(analysis.fileSizeBytes)}
+              />
+              <MetadataRow label="Content type" value={analysis.contentType} />
+              <MetadataRow label="Model" value={analysis.modelName} />
+              <MetadataRow
+                label="Model version"
+                value={analysis.modelVersion}
+              />
+              <MetadataRow
+                label="Created"
+                value={formatDateTime(analysis.createdAt)}
+              />
+              <MetadataRow
+                label="Completed"
+                value={formatDateTime(analysis.completedAt)}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Processing status</CardTitle>
+              <CardDescription>Current AI workflow state.</CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              <AnalysisStatusBadge status={analysis.status} />
+
+              {POLLING_STATUSES.includes(analysis.status) && (
+                <p className="text-sm text-muted-foreground">
+                  This page refreshes automatically while the analysis is being
+                  processed.
+                </p>
+              )}
+
+              {analysis.status === "FAILED" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => retryMutation.mutate(analysis.id)}
+                  disabled={retryMutation.isPending}
+                >
+                  <RotateCcw
+                    className={
+                      retryMutation.isPending ? "size-4 animate-spin" : "size-4"
+                    }
+                  />
+                  {retryMutation.isPending ? "Retrying..." : "Retry analysis"}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
 
 function AnalysisDetailsSkeleton() {
   return (
-    <div className="flex flex-col gap-6">
-      <Skeleton className="h-9 w-40" />
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <Skeleton className="h-10 w-72" />
+        <Skeleton className="h-5 w-96" />
+      </div>
 
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-10 w-80" />
-          <Skeleton className="h-5 w-96" />
-        </CardHeader>
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="space-y-6">
+          <Skeleton className="h-96 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
 
-        <CardContent>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Skeleton className="h-96 w-full" />
         <Skeleton className="h-96 w-full" />
       </div>
+    </div>
+  );
+}
+
+type ImagePreviewProps = {
+  title: string;
+  imageUrl: string | null;
+  fallback: string;
+};
+
+function ImagePreview({ title, imageUrl, fallback }: ImagePreviewProps) {
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-medium">{title}</h3>
+
+      {imageUrl ? (
+        <div className="overflow-hidden rounded-lg border bg-muted">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageUrl}
+            alt={title}
+            className="aspect-video w-full object-contain"
+          />
+        </div>
+      ) : (
+        <div className="flex aspect-video items-center justify-center rounded-lg border border-dashed bg-muted/40 p-6 text-center">
+          <div>
+            <FileImage className="mx-auto size-8 text-muted-foreground" />
+            <p className="mt-2 text-sm text-muted-foreground">{fallback}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+type MetadataRowProps = {
+  label: string;
+  value: string;
+};
+
+function MetadataRow({ label, value }: MetadataRowProps) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b pb-3 last:border-b-0 last:pb-0">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-right font-medium break-all">{value}</span>
     </div>
   );
 }
