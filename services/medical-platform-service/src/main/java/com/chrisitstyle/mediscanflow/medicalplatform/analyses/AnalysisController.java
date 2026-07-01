@@ -1,5 +1,6 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisListItemDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysisDTO;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,11 @@ class AnalysisController {
             @RequestParam(defaultValue = "10") int limit
     ) {
         return analysisService.findRecentAnalyses(limit);
+    }
+
+    @GetMapping("/analyses")
+    List<AnalysisListItemDTO> findAllAnalyses() {
+        return analysisService.findAllAnalyses();
     }
 
     @GetMapping("/analyses/{id}")
