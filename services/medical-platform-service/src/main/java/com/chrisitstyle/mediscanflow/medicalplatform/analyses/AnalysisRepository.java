@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface AnalysisRepository extends JpaRepository<Analysis, UUID> {
     List<Analysis> findByPatientIdOrderByCreatedAtDesc(UUID patientId);
+    long countByStatus(AnalysisStatus status);
 }
