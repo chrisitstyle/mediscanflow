@@ -8,31 +8,45 @@ export type CreatePatientInput = {
   medicalRecordNumber: string;
 };
 
-export type GetPatientsInput = {
-  search?: string;
+export type PatientProfileUpdateInput = {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
 };
 
-export function getPatients(input: GetPatientsInput = {}): Promise<Patient[]> {
-  const search = input.search?.trim();
+export async function getPatients(input?: {
+  search?: string;
+}): Promise<Patient[]> {
+  const searchParams = new URLSearchParams();
 
-  if (!search) {
-    return apiFetch<Patient[]>("/patients");
+  if (input?.search) {
+    searchParams.set("search", input.search);
   }
 
-  const searchParams = new URLSearchParams({
-    search,
-  });
+  const query = searchParams.toString();
 
-  return apiFetch<Patient[]>(`/patients?${searchParams.toString()}`);
+  return apiFetch<Patient[]>(`/patients${query ? `?${query}` : ""}`);
 }
 
-export function getPatient(patientId: string): Promise<Patient> {
+export async function getPatient(patientId: string): Promise<Patient> {
   return apiFetch<Patient>(`/patients/${patientId}`);
 }
 
-export function createPatient(input: CreatePatientInput): Promise<Patient> {
+export async function createPatient(
+  input: CreatePatientInput,
+): Promise<Patient> {
   return apiFetch<Patient>("/patients", {
     method: "POST",
+    body: input,
+  });
+}
+
+export async function updatePatientProfile(
+  patientId: string,
+  input: PatientProfileUpdateInput,
+): Promise<Patient> {
+  return apiFetch<Patient>(`/patients/${patientId}/profile`, {
+    method: "PUT",
     body: input,
   });
 }
