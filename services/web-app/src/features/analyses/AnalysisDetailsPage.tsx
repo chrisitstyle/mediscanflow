@@ -8,6 +8,7 @@ import { getAnalysis } from "@/api/analysesApi";
 import { DetectionTable } from "@/features/analyses/DetectionTable";
 import { ApiClientError } from "@/lib/apiClient";
 import type { AnalysisStatus } from "@/types/analysis";
+import { AnalysisStatusBadge } from "@/components/status/AnalysisStatusBadge";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -113,9 +114,7 @@ export function AnalysisDetailsPage() {
           <Link href={`/patients/${analysis.patientId}`}>Back to patient</Link>
         </Button>
 
-        <Badge variant={getStatusVariant(analysis.status)}>
-          {analysis.status}
-        </Badge>
+        <AnalysisStatusBadge status={analysis.status} />
       </div>
 
       <Card>

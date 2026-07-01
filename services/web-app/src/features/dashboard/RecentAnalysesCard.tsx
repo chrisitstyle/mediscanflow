@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getRecentAnalyses } from "@/api/analysesApi";
 import { ApiClientError } from "@/lib/apiClient";
-import type { AnalysisStatus } from "@/types/analysis";
+import { AnalysisStatusBadge } from "@/components/status/AnalysisStatusBadge";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -27,20 +27,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-function getStatusVariant(
-  status: AnalysisStatus,
-): "default" | "secondary" | "destructive" | "outline" {
-  if (status === "COMPLETED") {
-    return "default";
-  }
-
-  if (status === "FAILED") {
-    return "destructive";
-  }
-
-  return "secondary";
-}
 
 function formatDateTime(value: string | null) {
   if (!value) {
@@ -164,9 +150,7 @@ export function RecentAnalysesCard() {
                     </TableCell>
 
                     <TableCell>
-                      <Badge variant={getStatusVariant(analysis.status)}>
-                        {analysis.status}
-                      </Badge>
+                      <AnalysisStatusBadge status={analysis.status} />
                     </TableCell>
 
                     <TableCell>

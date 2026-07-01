@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Analysis, AnalysisStatus } from "@/types/analysis";
+import { AnalysisStatusBadge } from "@/components/status/AnalysisStatusBadge";
 
 type PatientAnalysesListProps = {
   analyses: Analysis[];
@@ -104,9 +105,7 @@ export function PatientAnalysesList({ analyses }: PatientAnalysesListProps) {
                     </TableCell>
 
                     <TableCell>
-                      <Badge variant={getStatusVariant(analysis.status)}>
-                        {analysis.status}
-                      </Badge>
+                      <AnalysisStatusBadge status={analysis.status} />
                     </TableCell>
 
                     <TableCell>

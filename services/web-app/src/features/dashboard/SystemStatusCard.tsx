@@ -1,12 +1,13 @@
 "use client";
 
-import { Activity, Circle, RefreshCw } from "lucide-react";
+import { Activity, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { getSystemStatus } from "@/api/systemApi";
 import { ApiClientError } from "@/lib/apiClient";
 import type { SystemComponentStatus } from "@/types/systemStatus";
 
+import { SystemHealthIndicator } from "@/components/status/SystemHealthIndicator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,18 +43,6 @@ function getStatusVariant(status?: string) {
   return "secondary";
 }
 
-function getStatusDotClassName(status?: string) {
-  if (status === "UP") {
-    return "fill-green-500 text-green-500";
-  }
-
-  if (status === "DOWN") {
-    return "fill-red-500 text-red-500";
-  }
-
-  return "fill-muted text-muted-foreground";
-}
-
 function getComponentStatus(component?: SystemComponentStatus): string {
   return component?.status ?? "UNKNOWN";
 }
@@ -81,7 +70,6 @@ export function SystemStatusCard() {
               <Activity className="size-5" />
               System status
             </CardTitle>
-
             <CardDescription>
               Health overview of MediScanFlow services.
             </CardDescription>
@@ -106,18 +94,8 @@ export function SystemStatusCard() {
             const status = getComponentStatus(data?.components[item.key]);
 
             return (
-              <div
-                key={item.key}
-                className="flex items-center justify-between rounded-lg border px-3 py-2"
-              >
-                <div className="flex items-center gap-2">
-                  <Circle
-                    className={`size-3 ${getStatusDotClassName(status)}`}
-                  />
-                  <span className="text-sm font-medium">{item.label}</span>
-                </div>
-
-                <span className="sr-only">{status}</span>
+              <div key={item.key} className="rounded-lg border px-3 py-2">
+                <SystemHealthIndicator label={item.label} status={status} />
               </div>
             );
           })}
