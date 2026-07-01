@@ -39,6 +39,11 @@ class AnalysisController {
         return analysisService.findById(id);
     }
 
+    @PostMapping("analyses/{id}/retry")
+    AnalysisResponseDTO retryAnalysis(@PathVariable UUID id) {
+        return analysisService.retryAnalysis(id);
+    }
+
     @GetMapping("/patients/{patientId}/analyses")
     List<AnalysisResponseDTO> findByPatientId(@PathVariable UUID patientId) {
         return analysisService.findByPatientId(patientId);

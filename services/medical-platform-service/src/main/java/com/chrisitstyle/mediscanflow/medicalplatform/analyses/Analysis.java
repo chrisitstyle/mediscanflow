@@ -180,4 +180,11 @@ public class Analysis {
         this.completedAt = Instant.now();
         this.detections.clear();
     }
+    public void retry() {
+        this.status = AnalysisStatus.QUEUED;
+        this.errorMessage = null;
+        this.completedAt = null;
+        this.resultObjectKey = null;
+        this.detections.clear();
+    }
 }

@@ -50,6 +50,22 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(InvalidAnalysisStateException.class)
+    ResponseEntity<ApiErrorResponseDTO> handleInvalidAnalysisState(
+            InvalidAnalysisStateException exception,
+            HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.CONFLICT;
+
+        return ResponseEntity.status(status)
+                .body(ApiErrorResponseDTO.of(
+                        status.value(),
+                        status.getReasonPhrase(),
+                        exception.getMessage(),
+                        request.getRequestURI()
+                ));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ApiErrorResponseDTO> handleMethodArgumentNotValid(
             MethodArgumentNotValidException exception,

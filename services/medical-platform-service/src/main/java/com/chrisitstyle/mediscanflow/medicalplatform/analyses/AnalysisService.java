@@ -3,6 +3,7 @@ package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisDetectionDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysisDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.error.InvalidAnalysisStateException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.validation.FileUploadValidator;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.AnalysisEventPublisher;
@@ -63,20 +64,7 @@ public class AnalysisService {
 
         Analysis savedAnalysis = analysisRepository.save(analysis);
 
-        AnalysisRequestedEvent event = AnalysisRequestedEvent.create(
-                savedAnalysis.getId(),
-                patient.getId(),
-                savedAnalysis.getObjectKey(),
-                savedAnalysis.getModelName(),
-                savedAnalysis.getModelVersion()
-        );
-
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                analysisEventPublisher.publishAnalysisRequested(event);
-            }
-        });
+        publishAnalysisRequestedAfterCommit(savedAnalysis);
 
         return toResponseDTO(savedAnalysis);
     }
@@ -97,6 +85,34 @@ public class AnalysisService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<RecentAnalysisDTO> findRecentAnalyses(int limit) {
+        int safeLimit = Math.clamp(limit, 1, 20);
+        Pageable pageable = PageRequest.of(0, safeLimit);
+
+        return analysisRepository.findRecentAnalyses(pageable);
+    }
+
+    @Transactional
+    public AnalysisResponseDTO retryAnalysis(UUID analysisId) {
+        Analysis analysis = analysisRepository.findById(analysisId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Analysis not found with id: " + analysisId
+                ));
+
+        if (analysis.getStatus() != AnalysisStatus.FAILED) {
+            throw new InvalidAnalysisStateException(
+                    "Only failed analyses can be retried."
+            );
+        }
+
+        analysis.retry();
+
+        publishAnalysisRequestedAfterCommit(analysis);
+
+        return toResponseDTO(analysis);
+    }
+
     @Transactional
     public void complete(
             UUID analysisId,
@@ -109,15 +125,6 @@ public class AnalysisService {
                 .orElseThrow(() -> new ResourceNotFoundException("Analysis not found"));
 
         analysis.complete(modelName, modelVersion, resultObjectKey, detections);
-
-    }
-
-    @Transactional(readOnly = true)
-    public List<RecentAnalysisDTO> findRecentAnalyses(int limit) {
-        int safeLimit = Math.clamp(limit, 1, 20);
-        Pageable pageable = PageRequest.of(0, safeLimit);
-
-        return analysisRepository.findRecentAnalyses(pageable);
     }
 
     @Transactional
@@ -131,6 +138,23 @@ public class AnalysisService {
                 .orElseThrow(() -> new ResourceNotFoundException("Analysis not found"));
 
         analysis.fail(modelName, modelVersion, errorMessage);
+    }
+
+    private void publishAnalysisRequestedAfterCommit(Analysis analysis) {
+        AnalysisRequestedEvent event = AnalysisRequestedEvent.create(
+                analysis.getId(),
+                analysis.getPatient().getId(),
+                analysis.getObjectKey(),
+                analysis.getModelName(),
+                analysis.getModelVersion()
+        );
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                analysisEventPublisher.publishAnalysisRequested(event);
+            }
+        });
     }
 
     private String buildObjectKey(UUID analysisId, String originalFilename) {
