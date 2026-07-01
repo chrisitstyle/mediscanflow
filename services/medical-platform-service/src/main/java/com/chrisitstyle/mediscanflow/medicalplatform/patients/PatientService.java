@@ -3,6 +3,7 @@ package com.chrisitstyle.mediscanflow.medicalplatform.patients;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.DuplicateResourceException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.CreatePatientRequestDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientProfileUpdateDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,20 @@ public class PatientService {
         return patients.stream()
                 .map(this::toResponseDTO)
                 .toList();
+    }
+
+    @Transactional
+    public PatientResponseDTO updatePatientProfile(UUID patientId, PatientProfileUpdateDTO request) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + patientId));
+
+        patient.updateProfile(
+                request.firstName().trim(),
+                request.lastName().trim(),
+                request.dateOfBirth()
+        );
+
+        return toResponseDTO(patientRepository.save(patient));
     }
 
     @Transactional(readOnly = true)

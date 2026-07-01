@@ -1,6 +1,7 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.patients;
 
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.CreatePatientRequestDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientProfileUpdateDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientResponseDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,5 +34,13 @@ class PatientController {
     @GetMapping("/{id}")
     PatientResponseDTO findById(@PathVariable UUID id) {
         return patientService.findById(id);
+    }
+
+    @PutMapping("/{patientId}/profile")
+    public PatientResponseDTO updatePatientProfile(
+            @PathVariable UUID patientId,
+            @Valid @RequestBody PatientProfileUpdateDTO request
+    ) {
+        return patientService.updatePatientProfile(patientId, request);
     }
 }
