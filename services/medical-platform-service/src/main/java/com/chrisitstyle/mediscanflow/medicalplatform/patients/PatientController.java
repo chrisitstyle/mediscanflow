@@ -24,8 +24,10 @@ class PatientController {
     }
 
     @GetMapping
-    List<PatientResponseDTO> findAll() {
-        return patientService.findAll();
+    List<PatientResponseDTO> findAll(
+            @RequestParam(required = false) String search
+    ) {
+        return patientService.findAll(search);
     }
 
     @GetMapping("/{id}")

@@ -7,6 +7,7 @@ import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientRespons
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.UUID;
@@ -20,7 +21,9 @@ public class PatientService {
     @Transactional
     public PatientResponseDTO create(CreatePatientRequestDTO request) {
         if (patientRepository.existsByMedicalRecordNumber(request.medicalRecordNumber())) {
-            throw new DuplicateResourceException("Patient with this medical record number already exists");
+            throw new DuplicateResourceException(
+                    "Patient with medical record number already exists"
+            );
         }
 
         Patient patient = Patient.create(
@@ -30,14 +33,19 @@ public class PatientService {
                 request.medicalRecordNumber()
         );
 
-        return toResponse(patientRepository.save(patient));
+        Patient savedPatient = patientRepository.save(patient);
+
+        return toResponseDTO(savedPatient);
     }
 
     @Transactional(readOnly = true)
-    public List<PatientResponseDTO> findAll() {
-        return patientRepository.findAll()
-                .stream()
-                .map(this::toResponse)
+    public List<PatientResponseDTO> findAll(String search) {
+        List<Patient> patients = StringUtils.hasText(search)
+                ? patientRepository.searchByText(search.trim())
+                : patientRepository.findAllByOrderByCreatedAtDesc();
+
+        return patients.stream()
+                .map(this::toResponseDTO)
                 .toList();
     }
 
@@ -46,10 +54,10 @@ public class PatientService {
         Patient patient = patientRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Patient not found"));
 
-        return toResponse(patient);
+        return toResponseDTO(patient);
     }
 
-    private PatientResponseDTO toResponse(Patient patient) {
+    private PatientResponseDTO toResponseDTO(Patient patient) {
         return new PatientResponseDTO(
                 patient.getId(),
                 patient.getFirstName(),
