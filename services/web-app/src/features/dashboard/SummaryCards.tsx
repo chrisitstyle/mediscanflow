@@ -8,9 +8,10 @@ import {
   Users,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/queryKeys";
+
 import { getDashboardSummary } from "@/api/dashboardApi";
 import { ApiClientError } from "@/lib/apiClient";
+import { queryKeys } from "@/lib/queryKeys";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

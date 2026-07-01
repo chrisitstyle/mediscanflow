@@ -17,6 +17,10 @@ export const queryKeys = {
 
   dashboard: {
     summary: () => ["dashboard", "summary"] as const,
+    analysisStatusBreakdown: () =>
+      ["dashboard", "analysis-status-breakdown"] as const,
+    analysesOverTime: (days = 14) =>
+      ["dashboard", "analyses-over-time", days] as const,
   },
 
   system: {

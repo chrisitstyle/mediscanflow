@@ -1,3 +1,5 @@
+import { AnalysesOverTimeChartCard } from "@/features/dashboard/AnalysesOverTimeChartCard";
+import { AnalysisStatusChartCard } from "@/features/dashboard/AnalysisStatusChartCard";
 import { RecentAnalysesCard } from "@/features/dashboard/RecentAnalysesCard";
 import { SummaryCards } from "@/features/dashboard/SummaryCards";
 import { SystemStatusCard } from "@/features/dashboard/SystemStatusCard";
@@ -21,6 +23,11 @@ export function DashboardPage() {
       </div>
 
       <SummaryCards />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AnalysisStatusChartCard />
+        <AnalysesOverTimeChartCard days={14} />
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <RecentAnalysesCard />
