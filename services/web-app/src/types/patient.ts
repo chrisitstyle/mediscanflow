@@ -5,4 +5,6 @@ export type Patient = {
   dateOfBirth: string;
   medicalRecordNumber: string;
   createdAt: string;
+  archived: boolean;
+  archivedAt: string | null;
 };
