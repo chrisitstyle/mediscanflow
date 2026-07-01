@@ -2,11 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, ScanLine } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { ScanLine } from "lucide-react";
 
-const navItems = [{ href: "/patients", label: "Patients" }];
+import { SystemStatusPopover } from "@/features/system/SystemStatusPopover";
+import { cn } from "@/lib/utils";
+
+const navItems = [
+  { href: "/", label: "Dashboard" },
+  { href: "/patients", label: "Patients" },
+];
 
 export function AppNavbar() {
   const pathname = usePathname();
@@ -15,7 +19,7 @@ export function AppNavbar() {
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-6 px-6">
         <div className="flex items-center gap-8">
-          <Link href="/patients" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
               <ScanLine className="size-5" aria-hidden="true" />
             </span>
@@ -27,7 +31,10 @@ export function AppNavbar() {
 
           <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
             {navItems.map((item) => {
-              const isActive = pathname.startsWith(item.href);
+              const isActive =
+                item.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(item.href);
 
               return (
                 <Link
@@ -47,10 +54,7 @@ export function AppNavbar() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" type="button">
-            <Activity className="size-4" />
-            System status
-          </Button>
+          <SystemStatusPopover />
 
           <span
             className="flex size-9 items-center justify-center rounded-full bg-secondary text-sm font-medium text-secondary-foreground"

@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/apiClient";
 import type { Analysis } from "@/types/analysis";
+import type { RecentAnalysis } from "@/types/recentAnalysis";
 
 export type UploadScanInput = {
   patientId: string;
@@ -14,6 +15,10 @@ export function getPatientAnalyses(patientId: string): Promise<Analysis[]> {
 
 export function getAnalysis(analysisId: string): Promise<Analysis> {
   return apiFetch<Analysis>(`/analyses/${analysisId}`);
+}
+
+export function getRecentAnalyses(limit = 10): Promise<RecentAnalysis[]> {
+  return apiFetch<RecentAnalysis[]>(`/analyses/recent?limit=${limit}`);
 }
 
 export function uploadScan(input: UploadScanInput): Promise<Analysis> {

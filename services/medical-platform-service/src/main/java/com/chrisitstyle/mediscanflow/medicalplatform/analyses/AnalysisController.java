@@ -1,6 +1,7 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysisDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +27,13 @@ class AnalysisController {
         return analysisService.create(patientId, file, modelName, modelVersion);
     }
 
+    @GetMapping("/analyses/recent")
+    List<RecentAnalysisDTO> getRecentAnalyses(
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        return analysisService.findRecentAnalyses(limit);
+    }
+
     @GetMapping("/analyses/{id}")
     AnalysisResponseDTO findById(@PathVariable UUID id) {
         return analysisService.findById(id);
@@ -35,4 +43,5 @@ class AnalysisController {
     List<AnalysisResponseDTO> findByPatientId(@PathVariable UUID patientId) {
         return analysisService.findByPatientId(patientId);
     }
+
 }
