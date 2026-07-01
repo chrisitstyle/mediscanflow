@@ -10,6 +10,8 @@ public record PatientResponseDTO(
         String lastName,
         LocalDate dateOfBirth,
         String medicalRecordNumber,
-        Instant createdAt
+        Instant createdAt,
+        boolean archived,
+        Instant archivedAt
 ) {
 }

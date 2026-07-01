@@ -15,14 +15,25 @@ public interface PatientRepository extends JpaRepository<Patient, UUID> {
     boolean existsByMedicalRecordNumber(String medicalRecordNumber);
 
     List<Patient> findAllByOrderByCreatedAtDesc();
+    List<Patient> findAllByArchivedFalseOrderByCreatedAtDesc();
+    @Query("""
+        select p from Patient p
+        where p.firstName like concat('%', :search, '%')
+           or p.lastName like concat('%', :search, '%')
+           or p.medicalRecordNumber like concat('%', :search, '%')
+        order by p.createdAt desc
+        """)
+    List<Patient> searchByText(@Param("search") String search);
 
     @Query("""
-            SELECT patient
-            FROM Patient patient
-            WHERE LOWER(patient.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
-               OR LOWER(patient.lastName) LIKE LOWER(CONCAT('%', :search, '%'))
-               OR LOWER(patient.medicalRecordNumber) LIKE LOWER(CONCAT('%', :search, '%'))
-            ORDER BY patient.createdAt DESC
-            """)
-    List<Patient> searchByText(@Param("search") String search);
+        select p from Patient p
+        where p.archived = false
+          and (
+            p.firstName like concat('%', :search, '%')
+            or p.lastName like concat('%', :search, '%')
+            or p.medicalRecordNumber like concat('%', :search, '%')
+          )
+        order by p.createdAt desc
+        """)
+    List<Patient> searchActiveByText(@Param("search") String search);
 }

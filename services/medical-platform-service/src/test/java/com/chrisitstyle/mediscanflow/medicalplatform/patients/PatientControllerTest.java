@@ -21,6 +21,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -31,6 +32,12 @@ class PatientControllerTest {
     private static final UUID PATIENT_ID =
             UUID.fromString("9efdb5f0-733e-4f59-8a78-6240e43237c7");
 
+    private static final Instant CREATED_AT =
+            Instant.parse("2026-07-01T10:00:00Z");
+
+    private static final Instant ARCHIVED_AT =
+            Instant.parse("2026-07-01T11:00:00Z");
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -39,7 +46,7 @@ class PatientControllerTest {
 
     @Test
     void findAllPassesSearchQueryToService() throws Exception {
-        when(patientService.findAll("john"))
+        when(patientService.findAll("john", false))
                 .thenReturn(List.of(patientResponse()));
 
         mockMvc.perform(get("/api/patients?search=john").contextPath("/api"))
@@ -47,14 +54,15 @@ class PatientControllerTest {
                 .andExpect(jsonPath("$[0].id").value(PATIENT_ID.toString()))
                 .andExpect(jsonPath("$[0].firstName").value("John"))
                 .andExpect(jsonPath("$[0].lastName").value("Doe"))
-                .andExpect(jsonPath("$[0].medicalRecordNumber").value("MRN-0001"));
+                .andExpect(jsonPath("$[0].medicalRecordNumber").value("MRN-0001"))
+                .andExpect(jsonPath("$[0].archived").value(false));
 
-        then(patientService).should().findAll("john");
+        then(patientService).should().findAll("john", false);
     }
 
     @Test
-    void findAllPassesNullSearchWhenQueryIsNotProvided() throws Exception {
-        when(patientService.findAll(null))
+    void findAllPassesNullSearchAndFalseIncludeArchivedWhenQueryIsNotProvided() throws Exception {
+        when(patientService.findAll(null, false))
                 .thenReturn(List.of(patientResponse()));
 
         mockMvc.perform(get("/api/patients").contextPath("/api"))
@@ -62,9 +70,34 @@ class PatientControllerTest {
                 .andExpect(jsonPath("$[0].id").value(PATIENT_ID.toString()))
                 .andExpect(jsonPath("$[0].firstName").value("John"))
                 .andExpect(jsonPath("$[0].lastName").value("Doe"))
-                .andExpect(jsonPath("$[0].medicalRecordNumber").value("MRN-0001"));
+                .andExpect(jsonPath("$[0].medicalRecordNumber").value("MRN-0001"))
+                .andExpect(jsonPath("$[0].archived").value(false));
 
-        then(patientService).should().findAll(null);
+        then(patientService).should().findAll(null, false);
+    }
+
+    @Test
+    void findAllPassesIncludeArchivedToService() throws Exception {
+        PatientResponseDTO archivedPatient = patientResponse(
+                PATIENT_ID,
+                "John",
+                "Doe",
+                LocalDate.parse("1990-01-15"),
+                "MRN-0001",
+                true,
+                ARCHIVED_AT
+        );
+
+        when(patientService.findAll(null, true))
+                .thenReturn(List.of(archivedPatient));
+
+        mockMvc.perform(get("/api/patients?includeArchived=true").contextPath("/api"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(PATIENT_ID.toString()))
+                .andExpect(jsonPath("$[0].archived").value(true))
+                .andExpect(jsonPath("$[0].archivedAt").value("2026-07-01T11:00:00Z"));
+
+        then(patientService).should().findAll(null, true);
     }
 
     @Test
@@ -76,7 +109,9 @@ class PatientControllerTest {
                 "Anna",
                 "Kowalska",
                 LocalDate.of(1990, Month.APRIL, 15),
-                "MRN-0001"
+                "MRN-0001",
+                false,
+                null
         );
 
         given(patientService.updatePatientProfile(eq(patientId), any(PatientProfileUpdateDTO.class)))
@@ -97,7 +132,8 @@ class PatientControllerTest {
                 .andExpect(jsonPath("$.firstName").value("Anna"))
                 .andExpect(jsonPath("$.lastName").value("Kowalska"))
                 .andExpect(jsonPath("$.dateOfBirth").value("1990-04-15"))
-                .andExpect(jsonPath("$.medicalRecordNumber").value("MRN-0001"));
+                .andExpect(jsonPath("$.medicalRecordNumber").value("MRN-0001"))
+                .andExpect(jsonPath("$.archived").value(false));
 
         then(patientService).should()
                 .updatePatientProfile(eq(patientId), any(PatientProfileUpdateDTO.class));
@@ -124,13 +160,64 @@ class PatientControllerTest {
         then(patientService).shouldHaveNoInteractions();
     }
 
+    @Test
+    void archivePatientReturnsArchivedPatient() throws Exception {
+        PatientResponseDTO response = patientResponse(
+                PATIENT_ID,
+                "John",
+                "Doe",
+                LocalDate.parse("1990-01-15"),
+                "MRN-0001",
+                true,
+                ARCHIVED_AT
+        );
+
+        given(patientService.archivePatient(PATIENT_ID))
+                .willReturn(response);
+
+        mockMvc.perform(patch("/api/patients/{patientId}/archive", PATIENT_ID)
+                        .contextPath("/api"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(PATIENT_ID.toString()))
+                .andExpect(jsonPath("$.archived").value(true))
+                .andExpect(jsonPath("$.archivedAt").value("2026-07-01T11:00:00Z"));
+
+        then(patientService).should().archivePatient(PATIENT_ID);
+    }
+
+    @Test
+    void restorePatientReturnsActivePatient() throws Exception {
+        PatientResponseDTO response = patientResponse(
+                PATIENT_ID,
+                "John",
+                "Doe",
+                LocalDate.parse("1990-01-15"),
+                "MRN-0001",
+                false,
+                null
+        );
+
+        given(patientService.restorePatient(PATIENT_ID))
+                .willReturn(response);
+
+        mockMvc.perform(patch("/api/patients/{patientId}/restore", PATIENT_ID)
+                        .contextPath("/api"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(PATIENT_ID.toString()))
+                .andExpect(jsonPath("$.archived").value(false));
+
+        then(patientService).should().restorePatient(PATIENT_ID);
+    }
+
     private static PatientResponseDTO patientResponse() {
         return patientResponse(
                 PATIENT_ID,
                 "John",
                 "Doe",
                 LocalDate.parse("1990-01-15"),
-                "MRN-0001"
+                "MRN-0001",
+                false,
+                null
         );
     }
 
@@ -139,7 +226,9 @@ class PatientControllerTest {
             String firstName,
             String lastName,
             LocalDate dateOfBirth,
-            String medicalRecordNumber
+            String medicalRecordNumber,
+            boolean archived,
+            Instant archivedAt
     ) {
         return new PatientResponseDTO(
                 id,
@@ -147,7 +236,9 @@ class PatientControllerTest {
                 lastName,
                 dateOfBirth,
                 medicalRecordNumber,
-                Instant.parse("2026-07-01T10:00:00Z")
+                CREATED_AT,
+                archived,
+                archivedAt
         );
     }
 }
