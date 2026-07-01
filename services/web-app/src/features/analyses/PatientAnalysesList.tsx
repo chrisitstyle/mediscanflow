@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { FileImage } from "lucide-react";
+
+import { AnalysisStatusBadge } from "@/components/status/AnalysisStatusBadge";
+import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,24 +21,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Analysis, AnalysisStatus } from "@/types/analysis";
-import { AnalysisStatusBadge } from "@/components/status/AnalysisStatusBadge";
+import type { Analysis } from "@/types/analysis";
 
 type PatientAnalysesListProps = {
   analyses: Analysis[];
 };
-
-function getStatusVariant(status: AnalysisStatus) {
-  if (status === "COMPLETED") {
-    return "default";
-  }
-
-  if (status === "FAILED") {
-    return "destructive";
-  }
-
-  return "secondary";
-}
 
 function formatDateTime(value: string | null) {
   if (!value) {
@@ -72,12 +62,11 @@ export function PatientAnalysesList({ analyses }: PatientAnalysesListProps) {
 
       <CardContent>
         {analyses.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-10 text-center">
-            <h2 className="text-lg font-semibold">No analyses yet</h2>
-            <p className="mt-2 max-w-md text-sm text-muted-foreground">
-              Upload a scan to start AI-powered medical image analysis.
-            </p>
-          </div>
+          <EmptyState
+            icon={<FileImage className="size-6" />}
+            title="No analyses yet"
+            description="Upload the first scan for this patient to start asynchronous AI analysis."
+          />
         ) : (
           <div className="overflow-hidden rounded-lg border">
             <Table>
