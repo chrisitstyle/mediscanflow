@@ -93,6 +93,39 @@ services:
       retries: 10
       start_period: 30s
 
+  web-app:
+    build:
+      context: ../services/web-app
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /api/backend
+        BACKEND_INTERNAL_URL: http://medical-platform-service:8080/api
+    container_name: mediscanflow-web-app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      NEXT_PUBLIC_API_BASE_URL: /api/backend
+      BACKEND_INTERNAL_URL: http://medical-platform-service:8080/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      medical-platform-service:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   ai-inference-service:
     build:
       context: ../services/ai-inference-service

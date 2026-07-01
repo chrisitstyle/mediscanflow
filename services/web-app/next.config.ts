@@ -4,6 +4,8 @@ const backendInternalUrl =
   process.env.BACKEND_INTERNAL_URL ?? "http://localhost:8080/api";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
+
   async rewrites() {
     return [
       {
