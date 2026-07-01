@@ -117,7 +117,7 @@ export function SystemStatusCard() {
                   <span className="text-sm font-medium">{item.label}</span>
                 </div>
 
-                <Badge variant={getStatusVariant(status)}>{status}</Badge>
+                <span className="sr-only">{status}</span>
               </div>
             );
           })}
