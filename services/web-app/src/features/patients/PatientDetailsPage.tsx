@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { Pencil } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { getPatient } from "@/api/patientsApi";
@@ -9,6 +10,7 @@ import { getPatientAnalyses } from "@/api/analysesApi";
 import { PatientAnalysesList } from "@/features/analyses/PatientAnalysesList";
 import { UploadScanDialog } from "@/features/analyses/UploadScanDialog";
 import { ApiClientError } from "@/lib/apiClient";
+import { queryKeys } from "@/lib/queryKeys";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +24,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { queryKeys } from "@/lib/queryKeys";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en", {
@@ -95,7 +96,19 @@ export function PatientDetailsPage() {
           <Link href="/patients">Back to patients</Link>
         </Button>
 
-        <UploadScanDialog patientId={patient.id} />
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="icon">
+            <Link
+              href={`/patients/${patient.id}/edit`}
+              aria-label="Edit patient"
+              title="Edit patient"
+            >
+              <Pencil className="size-4" />
+            </Link>
+          </Button>
+
+          <UploadScanDialog patientId={patient.id} />
+        </div>
       </div>
 
       <Card>

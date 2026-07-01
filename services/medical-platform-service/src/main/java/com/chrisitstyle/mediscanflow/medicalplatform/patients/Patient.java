@@ -67,4 +67,10 @@ public class Patient {
                 Instant.now()
         );
     }
+
+    public void updateProfile(String firstName, String lastName, LocalDate dateOfBirth) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.dateOfBirth = dateOfBirth;
+    }
 }
