@@ -20,7 +20,7 @@ type AuthContextValue = {
   loggingOut: boolean;
   keycloak: Keycloak | null;
   token: string | null;
-  login: () => Promise<void>;
+  login: (redirectUri?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<string | null>;
 };
@@ -66,11 +66,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [syncToken]);
 
-  const login = useCallback(async () => {
+  const login = useCallback(async (redirectUri?: string) => {
     const client = getKeycloakClient();
 
     await client.login({
-      redirectUri: window.location.origin,
+      redirectUri: redirectUri ?? window.location.origin,
     });
   }, []);
 

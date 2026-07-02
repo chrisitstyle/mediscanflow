@@ -1,11 +1,10 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
+import { AuthStatusScreen } from "@/components/AuthStatusScreen";
 import { useAuth } from "@/providers/AuthProvider";
-
-import { Skeleton } from "@/components/ui/skeleton";
 
 type ProtectedAppProps = {
   children: ReactNode;
@@ -15,31 +14,51 @@ const PUBLIC_PATHS = ["/login"];
 
 export function ProtectedApp({ children }: ProtectedAppProps) {
   const pathname = usePathname();
-  const { initialized, authenticated, login } = useAuth();
+  const router = useRouter();
+
+  const { initialized, authenticated, loggingOut } = useAuth();
 
   const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
 
+  useEffect(() => {
+    if (!initialized || authenticated || isPublicPath || loggingOut) {
+      return;
+    }
+
+    const redirectTo = `${window.location.pathname}${window.location.search}`;
+
+    if (redirectTo === "/") {
+      router.replace("/login");
+      return;
+    }
+
+    router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+  }, [authenticated, initialized, isPublicPath, loggingOut, router]);
+
   if (!initialized) {
     return (
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-6 py-8">
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <AuthStatusScreen
+        title="Preparing secure workspace"
+        description="MediScanFlow is checking your session before loading patient data."
+      />
+    );
+  }
+
+  if (loggingOut) {
+    return (
+      <AuthStatusScreen
+        title="Signing out"
+        description="You are being securely signed out from MediScanFlow."
+      />
     );
   }
 
   if (!authenticated && !isPublicPath) {
-    void login();
-
     return (
-      <main className="flex min-h-screen items-center justify-center px-6">
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">
-            Redirecting to login...
-          </p>
-        </div>
-      </main>
+      <AuthStatusScreen
+        title="Opening sign in page"
+        description="You need to sign in with your organization account to continue."
+      />
     );
   }
 
