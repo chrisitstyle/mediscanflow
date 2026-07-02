@@ -34,7 +34,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ApiClientError } from "@/lib/apiClient";
+import { canWriteMedicalData } from "@/lib/permissions";
 import { queryKeys } from "@/lib/queryKeys";
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
@@ -62,6 +64,10 @@ function formatDate(value: string) {
 export function PatientListPage() {
   const [search, setSearch] = useState("");
   const [includeArchived, setIncludeArchived] = useState(false);
+
+  const currentUserQuery = useCurrentUser();
+  const currentUser = currentUserQuery.data;
+  const canWrite = canWriteMedicalData(currentUser);
 
   const debouncedSearch = useDebouncedValue(search, 300);
   const normalizedSearch = debouncedSearch.trim();
@@ -92,12 +98,14 @@ export function PatientListPage() {
           </p>
         </div>
 
-        <Button asChild>
-          <Link href="/patients/new">
-            <UserPlus className="size-4" />
-            New patient
-          </Link>
-        </Button>
+        {canWrite && (
+          <Button asChild>
+            <Link href="/patients/new">
+              <UserPlus className="size-4" />
+              New patient
+            </Link>
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -168,7 +176,9 @@ export function PatientListPage() {
               description={
                 hasSearch
                   ? "No patient matches this search. Try another name or medical record number."
-                  : "Create the first patient record to start uploading scans and running AI analysis."
+                  : canWrite
+                    ? "Create the first patient record to start uploading scans and running AI analysis."
+                    : "No patient records are available yet."
               }
               className="min-h-80"
             >
@@ -180,11 +190,11 @@ export function PatientListPage() {
                 >
                   Clear search
                 </Button>
-              ) : (
+              ) : canWrite ? (
                 <Button asChild>
                   <Link href="/patients/new">Create patient</Link>
                 </Button>
-              )}
+              ) : null}
             </EmptyState>
           )}
 

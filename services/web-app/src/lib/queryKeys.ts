@@ -26,4 +26,7 @@ export const queryKeys = {
   system: {
     status: () => ["system", "status"] as const,
   },
+  auth: {
+    me: () => ["auth", "me"] as const,
+  },
 };

@@ -4,15 +4,10 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Download, FileImage, RotateCcw } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { getAnalysis, retryAnalysis } from "@/api/analysesApi";
 import { AnalysisStatusBadge } from "@/components/status/AnalysisStatusBadge";
-import { ApiClientError } from "@/lib/apiClient";
-import { queryKeys } from "@/lib/queryKeys";
-
-import { DetectionTable } from "@/features/analyses/DetectionTable";
-import { AnalysisImagePreviewDialog } from "@/features/analyses/AnalysisImagePreviewDialog";
-
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +18,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AnalysisImagePreviewDialog } from "@/features/analyses/AnalysisImagePreviewDialog";
+import { DetectionTable } from "@/features/analyses/DetectionTable";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { ApiClientError } from "@/lib/apiClient";
+import { getAccessToken } from "@/lib/authTokenStore";
+import { canWriteMedicalData } from "@/lib/permissions";
+import { queryKeys } from "@/lib/queryKeys";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend";
 
 const POLLING_STATUSES = ["UPLOADED", "QUEUED", "PROCESSING"];
 
@@ -54,6 +58,10 @@ export function AnalysisDetailsPage() {
   const analysisId = params.analysisId;
 
   const queryClient = useQueryClient();
+
+  const currentUserQuery = useCurrentUser();
+  const currentUser = currentUserQuery.data;
+  const canWrite = canWriteMedicalData(currentUser);
 
   const {
     data: analysis,
@@ -115,6 +123,48 @@ export function AnalysisDetailsPage() {
       ? retryMutation.error.message
       : "Could not retry this analysis";
 
+  async function handleDownloadReport() {
+    if (!analysis) {
+      return;
+    }
+
+    const token = getAccessToken();
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/analyses/${analysis.id}/report`,
+        {
+          headers: token
+            ? {
+                Authorization: `Bearer ${token}`,
+              }
+            : undefined,
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(response.statusText || "Could not download report");
+      }
+
+      const blob = await response.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `analysis-${analysis.id}-report.pdf`;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(objectUrl);
+    } catch {
+      toast.error("Could not download report", {
+        description: "Please try again in a moment.",
+      });
+    }
+  }
+
   if (isLoading) {
     return <AnalysisDetailsSkeleton />;
   }
@@ -138,6 +188,9 @@ export function AnalysisDetailsPage() {
       </Alert>
     );
   }
+
+  const showRetryAction =
+    !currentUserQuery.isLoading && canWrite && analysis.status === "FAILED";
 
   return (
     <div className="space-y-6">
@@ -164,14 +217,16 @@ export function AnalysisDetailsPage() {
             </Link>
           </Button>
 
-          <Button asChild variant="outline">
-            <a href={`/api/backend/analyses/${analysis.id}/report`}>
-              <Download className="size-4" />
-              Download report
-            </a>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleDownloadReport}
+          >
+            <Download className="size-4" />
+            Download report
           </Button>
 
-          {analysis.status === "FAILED" && (
+          {showRetryAction && (
             <Button
               type="button"
               onClick={() => retryMutation.mutate(analysis.id)}
@@ -288,14 +343,17 @@ export function AnalysisDetailsPage() {
                 </p>
               )}
 
-              <Button asChild variant="outline" className="w-full">
-                <a href={`/api/backend/analyses/${analysis.id}/report`}>
-                  <Download className="size-4" />
-                  Download report
-                </a>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleDownloadReport}
+              >
+                <Download className="size-4" />
+                Download report
               </Button>
 
-              {analysis.status === "FAILED" && (
+              {showRetryAction && (
                 <Button
                   type="button"
                   variant="outline"

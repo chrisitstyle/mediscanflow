@@ -6,11 +6,13 @@ import { Archive, Pencil, RotateCcw } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { archivePatient, getPatient, restorePatient } from "@/api/patientsApi";
 import { getPatientAnalyses } from "@/api/analysesApi";
+import { archivePatient, getPatient, restorePatient } from "@/api/patientsApi";
 import { PatientAnalysesList } from "@/features/analyses/PatientAnalysesList";
 import { UploadScanDialog } from "@/features/analyses/UploadScanDialog";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ApiClientError } from "@/lib/apiClient";
+import { canWriteMedicalData } from "@/lib/permissions";
 import { queryKeys } from "@/lib/queryKeys";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -44,6 +46,10 @@ export function PatientDetailsPage() {
   const patientId = params.patientId;
 
   const queryClient = useQueryClient();
+
+  const currentUserQuery = useCurrentUser();
+  const currentUser = currentUserQuery.data;
+  const canWrite = canWriteMedicalData(currentUser);
 
   const patientQuery = useQuery({
     queryKey: queryKeys.patients.detail(patientId),
@@ -157,6 +163,8 @@ export function PatientDetailsPage() {
   const isArchiveActionPending =
     archiveMutation.isPending || restoreMutation.isPending;
 
+  const showWriteActions = !currentUserQuery.isLoading && canWrite;
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
       <div className="flex items-center justify-between gap-4">
@@ -164,53 +172,57 @@ export function PatientDetailsPage() {
           <Link href="/patients">Back to patients</Link>
         </Button>
 
-        <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="icon">
-            <Link
-              href={`/patients/${patient.id}/edit`}
-              aria-label="Edit patient"
-              title="Edit patient"
-            >
-              <Pencil className="size-4" />
-            </Link>
-          </Button>
-
-          {patient.archived ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => restoreMutation.mutate(patient.id)}
-              disabled={isArchiveActionPending}
-              aria-label="Restore patient"
-              title="Restore patient"
-            >
-              <RotateCcw
-                className={
-                  restoreMutation.isPending ? "size-4 animate-spin" : "size-4"
-                }
-              />
+        {showWriteActions && (
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="icon">
+              <Link
+                href={`/patients/${patient.id}/edit`}
+                aria-label="Edit patient"
+                title="Edit patient"
+              >
+                <Pencil className="size-4" />
+              </Link>
             </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => archiveMutation.mutate(patient.id)}
-              disabled={isArchiveActionPending}
-              aria-label="Archive patient"
-              title="Archive patient"
-            >
-              <Archive
-                className={
-                  archiveMutation.isPending ? "size-4 animate-pulse" : "size-4"
-                }
-              />
-            </Button>
-          )}
 
-          {!patient.archived && <UploadScanDialog patientId={patient.id} />}
-        </div>
+            {patient.archived ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => restoreMutation.mutate(patient.id)}
+                disabled={isArchiveActionPending}
+                aria-label="Restore patient"
+                title="Restore patient"
+              >
+                <RotateCcw
+                  className={
+                    restoreMutation.isPending ? "size-4 animate-spin" : "size-4"
+                  }
+                />
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => archiveMutation.mutate(patient.id)}
+                disabled={isArchiveActionPending}
+                aria-label="Archive patient"
+                title="Archive patient"
+              >
+                <Archive
+                  className={
+                    archiveMutation.isPending
+                      ? "size-4 animate-pulse"
+                      : "size-4"
+                  }
+                />
+              </Button>
+            )}
+
+            {!patient.archived && <UploadScanDialog patientId={patient.id} />}
+          </div>
+        )}
       </div>
 
       {patient.archived && (

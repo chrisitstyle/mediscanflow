@@ -12,9 +12,7 @@ import {
   updatePatientProfile,
   type PatientProfileUpdateInput,
 } from "@/api/patientsApi";
-import { ApiClientError } from "@/lib/apiClient";
-import { queryKeys } from "@/lib/queryKeys";
-
+import { AccessDenied } from "@/components/AccessDenied";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +33,10 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { ApiClientError } from "@/lib/apiClient";
+import { canWriteMedicalData } from "@/lib/permissions";
+import { queryKeys } from "@/lib/queryKeys";
 
 type FormState = PatientProfileUpdateInput;
 type FormErrors = Partial<Record<keyof FormState, string>>;
@@ -79,10 +81,14 @@ export function EditPatientForm() {
   const [values, setValues] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<FormErrors>({});
 
+  const currentUserQuery = useCurrentUser();
+  const currentUser = currentUserQuery.data;
+  const canWrite = canWriteMedicalData(currentUser);
+
   const patientQuery = useQuery({
     queryKey: queryKeys.patients.detail(patientId),
     queryFn: () => getPatient(patientId),
-    enabled: !!patientId,
+    enabled: !!patientId && canWrite,
   });
 
   useEffect(() => {
@@ -134,6 +140,21 @@ export function EditPatientForm() {
       }
     },
   });
+
+  if (currentUserQuery.isLoading) {
+    return <EditPatientSkeleton />;
+  }
+
+  if (!canWrite) {
+    return (
+      <AccessDenied
+        title="Patient editing restricted"
+        description="Only admins and doctors can edit patient profiles."
+        backHref={`/patients/${patientId}`}
+        backLabel="Back to patient"
+      />
+    );
+  }
 
   const loadErrorMessage =
     patientQuery.error instanceof ApiClientError
