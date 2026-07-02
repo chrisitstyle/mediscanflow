@@ -26,6 +26,7 @@ dependencies {
 	implementation 'org.flywaydb:flyway-database-postgresql'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'io.minio:minio:9.0.3'
+	implementation 'com.github.librepdf:openpdf:3.0.5'
 
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
