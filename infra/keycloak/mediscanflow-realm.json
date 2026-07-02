@@ -1,0 +1,92 @@
+{
+  "realm": "mediscanflow",
+  "enabled": true,
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN",
+        "description": "System administrator"
+      },
+      {
+        "name": "DOCTOR",
+        "description": "Clinical user with patient and analysis write access"
+      },
+      {
+        "name": "STAFF",
+        "description": "Read-only staff user"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "mediscanflow-web",
+      "name": "MediScanFlow Web",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@mediscanflow.com",
+      "email": "admin@mediscanflow.com",
+      "firstName": "Admin",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ADMIN"]
+    },
+    {
+      "username": "doctor@mediscanflow.com",
+      "email": "doctor@mediscanflow.com",
+      "firstName": "Demo",
+      "lastName": "Doctor",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Doctor123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["DOCTOR"]
+    },
+    {
+      "username": "staff@mediscanflow.com",
+      "email": "staff@mediscanflow.com",
+      "firstName": "Staff",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Staff123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["STAFF"]
+    }
+  ]
+}

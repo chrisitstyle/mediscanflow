@@ -51,6 +51,29 @@ services:
       timeout: 5s
       retries: 10
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.6.4
+    container_name: mediscanflow-keycloak
+    command:
+      - start-dev
+      - --import-realm
+      - --health-enabled=true
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8080
+    ports:
+      - "8081:8080"
+    volumes:
+      - mediscanflow-keycloak-data:/opt/keycloak/data
+      - ./keycloak/mediscanflow-realm.json:/opt/keycloak/data/import/mediscanflow-realm.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/8080'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
   medical-platform-service:
     build:
       context: ../services/medical-platform-service
@@ -73,6 +96,9 @@ services:
       APP_STORAGE_MINIO_SECRET_KEY: mediscanflow123
       APP_STORAGE_MINIO_BUCKET: medical-scans
       APP_STORAGE_MINIO_REGION: us-east-1
+
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8081/realms/mediscanflow
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/mediscanflow/protocol/openid-connect/certs
     ports:
       - "8080:8080"
     depends_on:
@@ -81,6 +107,8 @@ services:
       rabbitmq:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      keycloak:
         condition: service_healthy
     healthcheck:
       test:
@@ -100,6 +128,9 @@ services:
       args:
         NEXT_PUBLIC_API_BASE_URL: /api/backend
         BACKEND_INTERNAL_URL: http://medical-platform-service:8080/api
+        NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:8081
+        NEXT_PUBLIC_KEYCLOAK_REALM: mediscanflow
+        NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: mediscanflow-web
     container_name: mediscanflow-web-app
     restart: unless-stopped
     environment:
@@ -108,6 +139,9 @@ services:
       HOSTNAME: 0.0.0.0
       NEXT_PUBLIC_API_BASE_URL: /api/backend
       BACKEND_INTERNAL_URL: http://medical-platform-service:8080/api
+      NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:8081
+      NEXT_PUBLIC_KEYCLOAK_REALM: mediscanflow
+      NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: mediscanflow-web
     ports:
       - "3000:3000"
     depends_on:
@@ -160,3 +194,4 @@ volumes:
   mediscanflow-postgres-data:
   mediscanflow-rabbitmq-data:
   mediscanflow-minio-data:
+  mediscanflow-keycloak-data:
