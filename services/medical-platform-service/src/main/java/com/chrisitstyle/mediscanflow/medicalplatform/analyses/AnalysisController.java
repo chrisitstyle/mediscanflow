@@ -3,8 +3,9 @@ package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisListItemDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysisDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.report.AnalysisReportService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,6 +17,7 @@ import java.util.UUID;
 class AnalysisController {
 
     private final AnalysisService analysisService;
+    private final AnalysisReportService analysisReportService;
 
     @PostMapping("/patients/{patientId}/analyses")
     @ResponseStatus(HttpStatus.CREATED)
@@ -53,6 +55,24 @@ class AnalysisController {
     @GetMapping("/patients/{patientId}/analyses")
     List<AnalysisResponseDTO> findByPatientId(@PathVariable UUID patientId) {
         return analysisService.findByPatientId(patientId);
+    }
+
+    @GetMapping("/analyses/{analysisId}/report")
+    public ResponseEntity<byte[]> downloadReport(@PathVariable UUID analysisId) {
+        byte[] report = analysisReportService.generateReport(analysisId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(
+                ContentDisposition.attachment()
+                        .filename("analysis-report-" + analysisId + ".pdf")
+                        .build()
+        );
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .body(report);
     }
 
 }

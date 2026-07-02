@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -22,6 +23,23 @@ class MinioFileStorageService implements FileStorageService {
         this.internalMinioClient = internalMinioClient;
         this.publicMinioClient = publicMinioClient;
         this.properties = properties;
+    }
+
+    @Override
+    public byte[] download(String objectKey) {
+        try (InputStream inputStream = internalMinioClient.getObject(
+                GetObjectArgs.builder()
+                        .bucket(properties.bucket())
+                        .object(objectKey)
+                        .build()
+        )) {
+            return inputStream.readAllBytes();
+        } catch (Exception exception) {
+            throw new IllegalStateException(
+                    "Could not download object from MinIO: " + objectKey,
+                    exception
+            );
+        }
     }
 
     @Override
