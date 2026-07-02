@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -37,15 +37,10 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ApiClientError } from "@/lib/apiClient";
 import { canWriteMedicalData } from "@/lib/permissions";
 import { queryKeys } from "@/lib/queryKeys";
+import type { Patient } from "@/types/patient";
 
 type FormState = PatientProfileUpdateInput;
 type FormErrors = Partial<Record<keyof FormState, string>>;
-
-const emptyForm: FormState = {
-  firstName: "",
-  lastName: "",
-  dateOfBirth: "",
-};
 
 function validate(values: FormState): FormErrors {
   const errors: FormErrors = {};
@@ -75,12 +70,6 @@ export function EditPatientForm() {
   const params = useParams<{ patientId: string }>();
   const patientId = params.patientId;
 
-  const router = useRouter();
-  const queryClient = useQueryClient();
-
-  const [values, setValues] = useState<FormState>(emptyForm);
-  const [errors, setErrors] = useState<FormErrors>({});
-
   const currentUserQuery = useCurrentUser();
   const currentUser = currentUserQuery.data;
   const canWrite = canWriteMedicalData(currentUser);
@@ -89,56 +78,6 @@ export function EditPatientForm() {
     queryKey: queryKeys.patients.detail(patientId),
     queryFn: () => getPatient(patientId),
     enabled: !!patientId && canWrite,
-  });
-
-  useEffect(() => {
-    if (!patientQuery.data) {
-      return;
-    }
-
-    setValues({
-      firstName: patientQuery.data.firstName,
-      lastName: patientQuery.data.lastName,
-      dateOfBirth: patientQuery.data.dateOfBirth,
-    });
-  }, [patientQuery.data]);
-
-  const mutation = useMutation({
-    mutationFn: (input: PatientProfileUpdateInput) =>
-      updatePatientProfile(patientId, input),
-    onSuccess: async (patient) => {
-      toast.success("Patient updated", {
-        description: `${patient.firstName} ${patient.lastName} profile was updated.`,
-      });
-
-      queryClient.setQueryData(queryKeys.patients.detail(patient.id), patient);
-
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.patients.all,
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.patients.detail(patient.id),
-        }),
-      ]);
-
-      router.push(`/patients/${patient.id}`);
-    },
-    onError: (error) => {
-      toast.error("Could not update patient", {
-        description:
-          error instanceof ApiClientError
-            ? error.message
-            : "Unexpected error while updating patient.",
-      });
-
-      if (error instanceof ApiClientError) {
-        setErrors((previousErrors) => ({
-          ...previousErrors,
-          ...error.validationErrors,
-        }));
-      }
-    },
   });
 
   if (currentUserQuery.isLoading) {
@@ -160,6 +99,93 @@ export function EditPatientForm() {
     patientQuery.error instanceof ApiClientError
       ? patientQuery.error.message
       : "Could not load patient";
+
+  if (patientQuery.isLoading) {
+    return <EditPatientSkeleton />;
+  }
+
+  if (patientQuery.isError) {
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>Could not load patient</AlertTitle>
+        <AlertDescription>{loadErrorMessage}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!patientQuery.data) {
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>Patient not found</AlertTitle>
+        <AlertDescription>
+          The requested patient could not be loaded.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return <EditPatientFormContent patient={patientQuery.data} />;
+}
+
+type EditPatientFormContentProps = {
+  patient: Patient;
+};
+
+function EditPatientFormContent({ patient }: EditPatientFormContentProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const [values, setValues] = useState<FormState>(() => ({
+    firstName: patient.firstName,
+    lastName: patient.lastName,
+    dateOfBirth: patient.dateOfBirth,
+  }));
+
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const mutation = useMutation({
+    mutationFn: (input: PatientProfileUpdateInput) =>
+      updatePatientProfile(patient.id, input),
+    onSuccess: async (updatedPatient) => {
+      toast.success("Patient updated", {
+        description: `${updatedPatient.firstName} ${updatedPatient.lastName} profile was updated.`,
+      });
+
+      queryClient.setQueryData(
+        queryKeys.patients.detail(updatedPatient.id),
+        updatedPatient,
+      );
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.patients.all,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.patients.detail(updatedPatient.id),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["audit"],
+        }),
+      ]);
+
+      router.push(`/patients/${updatedPatient.id}`);
+    },
+    onError: (error) => {
+      toast.error("Could not update patient", {
+        description:
+          error instanceof ApiClientError
+            ? error.message
+            : "Unexpected error while updating patient.",
+      });
+
+      if (error instanceof ApiClientError) {
+        setErrors((previousErrors) => ({
+          ...previousErrors,
+          ...error.validationErrors,
+        }));
+      }
+    },
+  });
 
   const submitError =
     mutation.error instanceof ApiClientError
@@ -204,32 +230,6 @@ export function EditPatientForm() {
 
     mutation.mutate(trimmed);
   }
-
-  if (patientQuery.isLoading) {
-    return <EditPatientSkeleton />;
-  }
-
-  if (patientQuery.isError) {
-    return (
-      <Alert variant="destructive">
-        <AlertTitle>Could not load patient</AlertTitle>
-        <AlertDescription>{loadErrorMessage}</AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (!patientQuery.data) {
-    return (
-      <Alert variant="destructive">
-        <AlertTitle>Patient not found</AlertTitle>
-        <AlertDescription>
-          The requested patient could not be loaded.
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  const patient = patientQuery.data;
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-8">

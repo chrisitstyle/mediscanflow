@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Activity,
   Brain,
@@ -49,31 +49,54 @@ function getSafeRedirectTo(value: string | null) {
 }
 
 export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <LoginPageView isPreparing authenticated={false} onLogin={undefined} />
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { initialized, authenticated, login } = useAuth();
 
-  const [redirectTo, setRedirectTo] = useState<string | null>(null);
+  const redirectTo = getSafeRedirectTo(searchParams.get("redirectTo"));
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const nextRedirectTo = getSafeRedirectTo(searchParams.get("redirectTo"));
-
-    setRedirectTo(nextRedirectTo);
-  }, []);
-
-  useEffect(() => {
-    if (initialized && authenticated && redirectTo) {
+    if (initialized && authenticated) {
       router.replace(redirectTo);
     }
   }, [authenticated, initialized, redirectTo, router]);
 
-  const isPreparing = !initialized || !redirectTo;
-  const resolvedRedirectTo = redirectTo ?? "/";
-
   async function handleLogin() {
-    await login(`${window.location.origin}${resolvedRedirectTo}`);
+    await login(`${window.location.origin}${redirectTo}`);
   }
 
+  return (
+    <LoginPageView
+      isPreparing={!initialized}
+      authenticated={authenticated}
+      onLogin={() => void handleLogin()}
+    />
+  );
+}
+
+type LoginPageViewProps = {
+  isPreparing: boolean;
+  authenticated: boolean;
+  onLogin?: () => void;
+};
+
+function LoginPageView({
+  isPreparing,
+  authenticated,
+  onLogin,
+}: LoginPageViewProps) {
   return (
     <main className="relative flex min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.18),transparent_32%),linear-gradient(to_bottom,hsl(var(--background)),hsl(var(--muted)/0.45))] px-6 py-10">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-primary/40 to-transparent" />
@@ -137,7 +160,7 @@ export default function LoginPage() {
                 type="button"
                 className="h-11 w-full"
                 disabled={isPreparing || authenticated}
-                onClick={() => void handleLogin()}
+                onClick={onLogin}
               >
                 {isPreparing ? (
                   <>
