@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { FileImage, RotateCcw } from "lucide-react";
+import { Download, FileImage, RotateCcw } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { getAnalysis, retryAnalysis } from "@/api/analysesApi";
 import { AnalysisStatusBadge } from "@/components/status/AnalysisStatusBadge";
 import { ApiClientError } from "@/lib/apiClient";
+import { queryKeys } from "@/lib/queryKeys";
 
 import { DetectionTable } from "@/features/analyses/DetectionTable";
+import { AnalysisImagePreviewDialog } from "@/features/analyses/AnalysisImagePreviewDialog";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -21,8 +23,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { queryKeys } from "@/lib/queryKeys";
-import { AnalysisImagePreviewDialog } from "@/features/analyses/AnalysisImagePreviewDialog";
 
 const POLLING_STATUSES = ["UPLOADED", "QUEUED", "PROCESSING"];
 
@@ -164,6 +164,13 @@ export function AnalysisDetailsPage() {
             </Link>
           </Button>
 
+          <Button asChild variant="outline">
+            <a href={`/api/backend/analyses/${analysis.id}/report`}>
+              <Download className="size-4" />
+              Download report
+            </a>
+          </Button>
+
           {analysis.status === "FAILED" && (
             <Button
               type="button"
@@ -280,6 +287,13 @@ export function AnalysisDetailsPage() {
                   processed.
                 </p>
               )}
+
+              <Button asChild variant="outline" className="w-full">
+                <a href={`/api/backend/analyses/${analysis.id}/report`}>
+                  <Download className="size-4" />
+                  Download report
+                </a>
+              </Button>
 
               {analysis.status === "FAILED" && (
                 <Button
