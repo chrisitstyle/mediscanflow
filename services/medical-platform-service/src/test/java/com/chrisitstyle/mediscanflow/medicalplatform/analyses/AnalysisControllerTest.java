@@ -3,6 +3,7 @@ package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisListItemDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysisDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.report.AnalysisReportService;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.InvalidAnalysisStateException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,9 @@ class AnalysisControllerTest {
 
     @MockitoBean
     private AnalysisService analysisService;
+
+    @MockitoBean
+    private AnalysisReportService analysisReportService;
 
     @Test
     void findAllAnalysesReturnsAnalysisListItems() throws Exception {

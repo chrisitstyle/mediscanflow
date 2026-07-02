@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+
 import { AppNavbar } from "@/components/AppNavbar";
-import { QueryProvider } from "@/lib/queryProvider";
+import { ProtectedApp } from "@/components/ProtectedApp";
+import { Providers } from "@/app/providers";
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
@@ -32,11 +34,13 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} bg-background`}
     >
       <body className="font-sans antialiased">
-        <QueryProvider>
-          <AppNavbar />
-          {children}
+        <Providers>
+          <ProtectedApp>
+            <AppNavbar />
+            {children}
+          </ProtectedApp>
           <Toaster />
-        </QueryProvider>
+        </Providers>
       </body>
     </html>
   );

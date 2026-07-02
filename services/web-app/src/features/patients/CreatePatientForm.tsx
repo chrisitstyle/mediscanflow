@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { createPatient, type CreatePatientInput } from "@/api/patientsApi";
-import { ApiClientError } from "@/lib/apiClient";
+import { AccessDenied } from "@/components/AccessDenied";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,9 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { ApiClientError } from "@/lib/apiClient";
+import { canWriteMedicalData } from "@/lib/permissions";
 import { queryKeys } from "@/lib/queryKeys";
 
 type FormState = CreatePatientInput;
@@ -75,6 +78,9 @@ export function CreatePatientForm() {
   const [values, setValues] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<FormErrors>({});
 
+  const currentUserQuery = useCurrentUser();
+  const currentUser = currentUserQuery.data;
+
   const mutation = useMutation({
     mutationFn: createPatient,
     onSuccess: async (patient) => {
@@ -106,6 +112,21 @@ export function CreatePatientForm() {
       }
     },
   });
+
+  if (currentUserQuery.isLoading) {
+    return null;
+  }
+
+  if (!canWriteMedicalData(currentUser)) {
+    return (
+      <AccessDenied
+        title="Patient creation restricted"
+        description="Only admins and doctors can create patients."
+        backHref="/patients"
+        backLabel="Back to patients"
+      />
+    );
+  }
 
   const submitError =
     mutation.error instanceof ApiClientError
