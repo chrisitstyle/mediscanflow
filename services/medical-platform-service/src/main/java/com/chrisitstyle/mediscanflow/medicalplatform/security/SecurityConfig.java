@@ -95,6 +95,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/analyses/*/retry")
                         .hasAnyRole(role(ADMIN), role(DOCTOR))
 
+                        .requestMatchers(HttpMethod.GET, "/audit-events/recent")
+                        .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
+
+                        .requestMatchers(HttpMethod.GET, "/patients/*/audit-events")
+                        .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
+
+                        .requestMatchers(HttpMethod.GET, "/analyses/*/audit-events")
+                        .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
+
                         .anyRequest()
                         .authenticated()
                 )

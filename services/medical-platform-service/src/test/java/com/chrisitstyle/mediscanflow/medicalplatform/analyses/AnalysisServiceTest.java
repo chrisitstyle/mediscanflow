@@ -2,7 +2,8 @@ package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisListItemDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
-import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysisDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventService;
+import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.InvalidAnalysisStateException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.validation.FileUploadValidator;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -50,6 +52,7 @@ class AnalysisServiceTest {
     private FileStorageService fileStorageService;
     private AnalysisEventPublisher analysisEventPublisher;
     private AnalysisService analysisService;
+    private AuditEventService auditEventService;
 
     @BeforeEach
     void setUp() {
@@ -58,13 +61,15 @@ class AnalysisServiceTest {
         fileStorageService = mock(FileStorageService.class);
         FileUploadValidator fileUploadValidator = mock(FileUploadValidator.class);
         analysisEventPublisher = mock(AnalysisEventPublisher.class);
+        auditEventService = mock(AuditEventService.class);
 
         analysisService = new AnalysisService(
                 analysisRepository,
                 patientRepository,
                 fileStorageService,
                 fileUploadValidator,
-                analysisEventPublisher
+                analysisEventPublisher,
+                auditEventService
         );
 
         TransactionSynchronizationManager.initSynchronization();
@@ -148,6 +153,13 @@ class AnalysisServiceTest {
         assertNull(response.errorMessage());
         assertNull(response.completedAt());
         assertNull(response.resultObjectKey());
+
+        verify(auditEventService).recordEvent(
+                AuditEventType.ANALYSIS_RETRIED,
+                PATIENT_ID,
+                ANALYSIS_ID,
+                "Analysis " + ANALYSIS_ID + " was retried."
+        );
     }
 
     @Test
@@ -170,6 +182,13 @@ class AnalysisServiceTest {
 
         verify(analysisEventPublisher)
                 .publishAnalysisRequested(any(AnalysisRequestedEvent.class));
+
+        verify(auditEventService).recordEvent(
+                AuditEventType.ANALYSIS_RETRIED,
+                PATIENT_ID,
+                ANALYSIS_ID,
+                "Analysis " + ANALYSIS_ID + " was retried."
+        );
     }
 
     @Test
@@ -186,6 +205,13 @@ class AnalysisServiceTest {
 
         verify(analysisEventPublisher, never())
                 .publishAnalysisRequested(any(AnalysisRequestedEvent.class));
+
+        verify(auditEventService, never()).recordEvent(
+                any(),
+                any(),
+                any(),
+                anyString()
+        );
     }
 
     @Test
@@ -200,6 +226,13 @@ class AnalysisServiceTest {
 
         verify(analysisEventPublisher, never())
                 .publishAnalysisRequested(any(AnalysisRequestedEvent.class));
+
+        verify(auditEventService, never()).recordEvent(
+                any(),
+                any(),
+                any(),
+                anyString()
+        );
     }
 
     private static AnalysisListItemDTO analysisListItem() {

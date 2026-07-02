@@ -1,5 +1,6 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.patients;
 
+import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventService;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientProfileUpdateDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientResponseDTO;
@@ -32,6 +33,8 @@ class PatientServiceTest {
 
     @Mock
     private PatientRepository patientRepository;
+    @Mock
+    private AuditEventService auditEventService;
 
     @InjectMocks
     private PatientService patientService;
