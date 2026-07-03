@@ -4,13 +4,17 @@ import com.chrisitstyle.mediscanflow.medicalplatform.messaging.RabbitMQConfig;
 import com.chrisitstyle.mediscanflow.medicalplatform.system.dto.SystemComponentStatusDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.system.dto.SystemStatusResponseDTO;
 import io.minio.MinioClient;
+import io.minio.errors.MinioException;
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 
 @Service
 class SystemStatusService {
@@ -48,44 +52,51 @@ class SystemStatusService {
         return new SystemStatusResponseDTO(overallStatus, components);
     }
 
-    private SystemComponentStatusDTO check(HealthCheck healthCheck) {
-        try {
-            return new SystemComponentStatusDTO(healthCheck.isUp() ? UP : DOWN);
-        } catch (Exception _) {
-            return new SystemComponentStatusDTO(DOWN);
-        }
+    private SystemComponentStatusDTO check(BooleanSupplier healthCheck) {
+        return new SystemComponentStatusDTO(healthCheck.getAsBoolean() ? UP : DOWN);
     }
 
     private boolean isDatabaseUp() {
-        Integer result = jdbcTemplate.queryForObject("SELECT 1", Integer.class);
-        return result != null && result == 1;
+        try {
+            Integer result = jdbcTemplate.queryForObject("SELECT 1", Integer.class);
+            return Integer.valueOf(1).equals(result);
+        } catch (DataAccessException _) {
+            return false;
+        }
     }
 
     private boolean isRabbitMqUp() {
-        return Boolean.TRUE.equals(
-                rabbitTemplate.execute(channel -> {
-                    channel.queueDeclarePassive(RabbitMQConfig.ANALYSIS_REQUESTED_QUEUE);
-                    return true;
-                })
-        );
+        try {
+            rabbitTemplate.execute(channel -> {
+                channel.queueDeclarePassive(RabbitMQConfig.ANALYSIS_REQUESTED_QUEUE);
+                return null;
+            });
+
+            return true;
+        } catch (AmqpException _) {
+            return false;
+        }
     }
 
-    private boolean isMinioUp() throws Exception {
-        minioClient.listBuckets();
-        return true;
+    private boolean isMinioUp() {
+        try {
+            minioClient.listBuckets();
+            return true;
+        } catch (MinioException _) {
+            return false;
+        }
     }
 
     private boolean isAiWorkerUp() {
-        Integer consumerCount = rabbitTemplate.execute(channel ->
-                channel.queueDeclarePassive(RabbitMQConfig.ANALYSIS_REQUESTED_QUEUE)
-                        .getConsumerCount()
-        );
+        try {
+            Integer consumerCount = rabbitTemplate.execute(channel ->
+                    channel.queueDeclarePassive(RabbitMQConfig.ANALYSIS_REQUESTED_QUEUE)
+                            .getConsumerCount()
+            );
 
-        return consumerCount != null && consumerCount > 0;
-    }
-
-    @FunctionalInterface
-    private interface HealthCheck {
-        boolean isUp() throws Exception;
+            return consumerCount > 0;
+        } catch (AmqpException _) {
+            return false;
+        }
     }
 }

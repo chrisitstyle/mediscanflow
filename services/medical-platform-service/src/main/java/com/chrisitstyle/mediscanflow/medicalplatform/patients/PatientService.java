@@ -18,6 +18,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PatientService {
 
+    private static final String PATIENT_AUDIT_PREFIX = "Patient ";
+    private static final String PATIENT_NOT_FOUND_WITH_ID_MESSAGE = "Patient not found with id: ";
+
     private final PatientRepository patientRepository;
     private final AuditEventService auditEventService;
 
@@ -42,7 +45,7 @@ public class PatientService {
                 AuditEventType.PATIENT_CREATED,
                 savedPatient.getId(),
                 null,
-                "Patient " + formatPatientName(savedPatient) + " was created."
+                PATIENT_AUDIT_PREFIX + formatPatientName(savedPatient) + " was created."
         );
 
         return toResponseDTO(savedPatient);
@@ -72,7 +75,7 @@ public class PatientService {
     @Transactional
     public PatientResponseDTO updatePatientProfile(UUID patientId, PatientProfileUpdateDTO request) {
         Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + patientId));
+                .orElseThrow(() -> new ResourceNotFoundException(PATIENT_NOT_FOUND_WITH_ID_MESSAGE + patientId));
 
         patient.updateProfile(
                 request.firstName().trim(),
@@ -86,7 +89,7 @@ public class PatientService {
                 AuditEventType.PATIENT_PROFILE_UPDATED,
                 savedPatient.getId(),
                 null,
-                "Patient " + formatPatientName(savedPatient) + " profile was updated."
+                PATIENT_AUDIT_PREFIX + formatPatientName(savedPatient) + " profile was updated."
         );
 
         return toResponseDTO(savedPatient);
@@ -95,7 +98,7 @@ public class PatientService {
     @Transactional
     public PatientResponseDTO archivePatient(UUID patientId) {
         Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + patientId));
+                .orElseThrow(() -> new ResourceNotFoundException(PATIENT_NOT_FOUND_WITH_ID_MESSAGE + patientId));
 
         patient.archive();
 
@@ -103,7 +106,7 @@ public class PatientService {
                 AuditEventType.PATIENT_ARCHIVED,
                 patient.getId(),
                 null,
-                "Patient " + formatPatientName(patient) + " was archived."
+                PATIENT_AUDIT_PREFIX + formatPatientName(patient) + " was archived."
         );
 
         return toResponseDTO(patient);
@@ -112,7 +115,7 @@ public class PatientService {
     @Transactional
     public PatientResponseDTO restorePatient(UUID patientId) {
         Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + patientId));
+                .orElseThrow(() -> new ResourceNotFoundException(PATIENT_NOT_FOUND_WITH_ID_MESSAGE + patientId));
 
         patient.restore();
 
@@ -120,7 +123,7 @@ public class PatientService {
                 AuditEventType.PATIENT_RESTORED,
                 patient.getId(),
                 null,
-                "Patient " + formatPatientName(patient) + " was restored."
+                PATIENT_AUDIT_PREFIX + formatPatientName(patient) + " was restored."
         );
 
         return toResponseDTO(patient);

@@ -32,6 +32,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AnalysisService {
 
+    private static final String ANALYSIS_NOT_FOUND_MSG = "Analysis not found";
+    private static final String PATIENT_NOT_FOUND_MSG = "Patient not found";
+    private static final String DEFAULT_INPUT_FILENAME = "input";
+
     private final AnalysisRepository analysisRepository;
     private final PatientRepository patientRepository;
     private final FileStorageService fileStorageService;
@@ -49,7 +53,7 @@ public class AnalysisService {
         fileUploadValidator.validateImageFile(file);
 
         Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(PATIENT_NOT_FOUND_MSG));
 
         if (patient.isArchived()) {
             throw new InvalidPatientStateException(
@@ -62,15 +66,19 @@ public class AnalysisService {
 
         fileStorageService.upload(objectKey, file);
 
-        Analysis analysis = Analysis.queued(
-                analysisId,
-                patient,
+        AnalysisInput analysisInput = new AnalysisInput(
                 file.getOriginalFilename(),
                 objectKey,
                 file.getContentType(),
                 file.getSize(),
                 modelName,
                 modelVersion
+        );
+
+        Analysis analysis = Analysis.queued(
+                analysisId,
+                patient,
+                analysisInput
         );
 
         Analysis savedAnalysis = analysisRepository.save(analysis);
@@ -90,7 +98,7 @@ public class AnalysisService {
     @Transactional(readOnly = true)
     public AnalysisResponseDTO findById(UUID id) {
         Analysis analysis = analysisRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Analysis not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(ANALYSIS_NOT_FOUND_MSG));
 
         return toResponseDTO(analysis);
     }
@@ -152,7 +160,7 @@ public class AnalysisService {
             List<AnalysisDetectionPayload> detections
     ) {
         Analysis analysis = analysisRepository.findById(analysisId)
-                .orElseThrow(() -> new ResourceNotFoundException("Analysis not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(ANALYSIS_NOT_FOUND_MSG));
 
         analysis.complete(modelName, modelVersion, resultObjectKey, detections);
     }
@@ -165,7 +173,7 @@ public class AnalysisService {
             String errorMessage
     ) {
         Analysis analysis = analysisRepository.findById(analysisId)
-                .orElseThrow(() -> new ResourceNotFoundException("Analysis not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(ANALYSIS_NOT_FOUND_MSG));
 
         analysis.fail(modelName, modelVersion, errorMessage);
     }
@@ -189,7 +197,7 @@ public class AnalysisService {
 
     private String buildObjectKey(UUID analysisId, String originalFilename) {
         String safeFilename = originalFilename == null
-                ? "input"
+                ? DEFAULT_INPUT_FILENAME
                 : originalFilename.replaceAll("[^a-zA-Z0-9._-]", "_");
 
         return "analyses/%s/%s".formatted(analysisId, safeFilename);

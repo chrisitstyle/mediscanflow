@@ -12,7 +12,7 @@ public record FileUploadValidationProperties(
 
     public FileUploadValidationProperties {
         if (maxSizeBytes <= 0) {
-            maxSizeBytes = 10 * 1024 * 1024;
+            maxSizeBytes = 10L * 1024 * 1024;
         }
 
         if (allowedContentTypes == null || allowedContentTypes.isEmpty()) {

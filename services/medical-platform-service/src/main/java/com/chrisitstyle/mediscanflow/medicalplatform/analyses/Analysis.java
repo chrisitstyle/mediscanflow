@@ -61,70 +61,45 @@ public class Analysis {
             UUID id,
             Patient patient,
             AnalysisStatus status,
-            String originalFileName,
-            String objectKey,
-            String contentType,
-            long fileSizeBytes,
-            String modelName,
-            String modelVersion,
+            AnalysisInput input,
             Instant createdAt
     ) {
         this.id = id;
         this.patient = patient;
         this.status = status;
-        this.originalFileName = originalFileName;
-        this.objectKey = objectKey;
-        this.contentType = contentType;
-        this.fileSizeBytes = fileSizeBytes;
-        this.modelName = modelName;
-        this.modelVersion = modelVersion;
+        this.originalFileName = input.originalFileName();
+        this.objectKey = input.objectKey();
+        this.contentType = input.contentType();
+        this.fileSizeBytes = input.fileSizeBytes();
+        this.modelName = input.modelName();
+        this.modelVersion = input.modelVersion();
         this.createdAt = createdAt;
     }
 
-    public static Analysis uploaded(
+    static Analysis uploaded(
             UUID id,
             Patient patient,
-            String originalFileName,
-            String objectKey,
-            String contentType,
-            long fileSizeBytes,
-            String modelName,
-            String modelVersion
+            AnalysisInput input
     ) {
         return new Analysis(
                 id,
                 patient,
                 AnalysisStatus.UPLOADED,
-                originalFileName,
-                objectKey,
-                contentType,
-                fileSizeBytes,
-                modelName,
-                modelVersion,
+                input,
                 Instant.now()
         );
     }
 
-    public static Analysis queued(
+    static Analysis queued(
             UUID id,
             Patient patient,
-            String originalFileName,
-            String objectKey,
-            String contentType,
-            long fileSizeBytes,
-            String modelName,
-            String modelVersion
+            AnalysisInput input
     ) {
         return new Analysis(
                 id,
                 patient,
                 AnalysisStatus.QUEUED,
-                originalFileName,
-                objectKey,
-                contentType,
-                fileSizeBytes,
-                modelName,
-                modelVersion,
+                input,
                 Instant.now()
         );
     }
@@ -180,6 +155,7 @@ public class Analysis {
         this.completedAt = Instant.now();
         this.detections.clear();
     }
+
     public void retry() {
         this.status = AnalysisStatus.QUEUED;
         this.errorMessage = null;
