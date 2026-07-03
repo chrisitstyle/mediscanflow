@@ -15,13 +15,12 @@ import com.chrisitstyle.mediscanflow.medicalplatform.messaging.outbox.OutboxEven
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.Patient;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.PatientRepository;
 import com.chrisitstyle.mediscanflow.medicalplatform.storage.FileStorageService;
+import com.chrisitstyle.mediscanflow.medicalplatform.storage.UploadedFileCleanupService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -42,6 +41,7 @@ public class AnalysisService {
     private final AnalysisMapper analysisMapper;
     private final AnalysisObjectKeyFactory analysisObjectKeyFactory;
     private final OutboxEventService outboxEventService;
+    private final UploadedFileCleanupService uploadedFileCleanupService;
 
     @Transactional
     public AnalysisResponseDTO create(
@@ -69,7 +69,7 @@ public class AnalysisService {
         );
 
         fileStorageService.upload(objectKey, file);
-        registerUploadedFileCleanupOnRollback(objectKey);
+        uploadedFileCleanupService.deleteOnRollback(objectKey);
 
         try {
             AnalysisInput analysisInput = new AnalysisInput(
@@ -100,7 +100,7 @@ public class AnalysisService {
 
             return analysisMapper.toResponseDTO(savedAnalysis);
         } catch (RuntimeException exception) {
-            deleteUploadedFileIfNoTransactionSynchronization(objectKey);
+            uploadedFileCleanupService.deleteIfNoActiveTransaction(objectKey);
             throw exception;
         }
     }
@@ -192,27 +192,6 @@ public class AnalysisService {
                 .orElseThrow(() -> new ResourceNotFoundException(ANALYSIS_NOT_FOUND_MSG));
 
         analysis.fail(modelName, modelVersion, errorMessage);
-    }
-
-    private void registerUploadedFileCleanupOnRollback(String objectKey) {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            return;
-        }
-
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCompletion(int status) {
-                if (status == STATUS_ROLLED_BACK) {
-                    fileStorageService.deleteIfExists(objectKey);
-                }
-            }
-        });
-    }
-
-    private void deleteUploadedFileIfNoTransactionSynchronization(String objectKey) {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            fileStorageService.deleteIfExists(objectKey);
-        }
     }
 
     private String analysisUploadedMessage(Analysis analysis) {
