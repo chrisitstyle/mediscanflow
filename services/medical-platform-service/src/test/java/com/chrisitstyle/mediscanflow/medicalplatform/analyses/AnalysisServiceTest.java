@@ -2,6 +2,8 @@ package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisListItemDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.mapper.AnalysisMapper;
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.projection.AnalysisSummaryProjection;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventService;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.InvalidAnalysisStateException;
@@ -9,7 +11,6 @@ import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.ResourceNo
 import com.chrisitstyle.mediscanflow.medicalplatform.common.validation.FileUploadValidator;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.AnalysisEventPublisher;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisRequestedEvent;
-import com.chrisitstyle.mediscanflow.medicalplatform.patients.Patient;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.PatientRepository;
 import com.chrisitstyle.mediscanflow.medicalplatform.storage.FileStorageService;
 import org.junit.jupiter.api.AfterEach;
@@ -22,11 +23,22 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
+import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.ANALYSIS_ID;
+import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.COMPLETED_AT;
+import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.CREATED_AT;
+import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.FILE_SIZE_BYTES;
+import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.MODEL_NAME;
+import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.MODEL_VERSION;
+import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.ORIGINAL_FILE_NAME;
+import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.PATIENT_FULL_NAME;
+import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.PATIENT_ID;
+import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.analysisListItem;
+import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.analysisResponseDTO;
+import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.failedAnalysis;
+import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.queuedAnalysis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -39,34 +51,21 @@ import static org.mockito.Mockito.when;
 
 class AnalysisServiceTest {
 
-    private static final UUID ANALYSIS_ID =
-            UUID.fromString("4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24");
-
-    private static final UUID PATIENT_ID =
-            UUID.fromString("9efdb5f0-733e-4f59-8a78-6240e43237c7");
-
-    private static final String ORIGINAL_FILE_NAME = "brain-scan.jpg";
-    private static final String OBJECT_KEY =
-            "analyses/4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24/brain-scan.jpg";
-    private static final String CONTENT_TYPE = "image/jpeg";
-    private static final long FILE_SIZE_BYTES = 30310L;
-    private static final String MODEL_NAME = "yolo-brain-tumor-detector";
-    private static final String MODEL_VERSION = "yolov8n";
-
     private AnalysisRepository analysisRepository;
-    private FileStorageService fileStorageService;
     private AnalysisEventPublisher analysisEventPublisher;
     private AnalysisService analysisService;
     private AuditEventService auditEventService;
+    private AnalysisMapper analysisMapper;
 
     @BeforeEach
     void setUp() {
         analysisRepository = mock(AnalysisRepository.class);
         PatientRepository patientRepository = mock(PatientRepository.class);
-        fileStorageService = mock(FileStorageService.class);
+        FileStorageService fileStorageService = mock(FileStorageService.class);
         FileUploadValidator fileUploadValidator = mock(FileUploadValidator.class);
         analysisEventPublisher = mock(AnalysisEventPublisher.class);
         auditEventService = mock(AuditEventService.class);
+        analysisMapper = mock(AnalysisMapper.class);
 
         analysisService = new AnalysisService(
                 analysisRepository,
@@ -74,7 +73,8 @@ class AnalysisServiceTest {
                 fileStorageService,
                 fileUploadValidator,
                 analysisEventPublisher,
-                auditEventService
+                auditEventService,
+                analysisMapper
         );
 
         TransactionSynchronizationManager.initSynchronization();
@@ -89,8 +89,14 @@ class AnalysisServiceTest {
 
     @Test
     void findAllAnalysesReturnsAnalysisListItemsFromRepository() {
-        when(analysisRepository.findAllAnalysisListItems())
-                .thenReturn(List.of(analysisListItem()));
+        AnalysisSummaryProjection projection = mock(AnalysisSummaryProjection.class);
+        AnalysisListItemDTO listItem = analysisListItem();
+
+        when(analysisRepository.findAllByOrderByCreatedAtDesc())
+                .thenReturn(List.of(projection));
+
+        when(analysisMapper.toListItemDTO(projection))
+                .thenReturn(listItem);
 
         List<AnalysisListItemDTO> analyses = analysisService.findAllAnalyses();
 
@@ -100,16 +106,17 @@ class AnalysisServiceTest {
 
         assertEquals(ANALYSIS_ID, analysis.id());
         assertEquals(PATIENT_ID, analysis.patientId());
-        assertEquals("John Doe", analysis.patientFullName());
+        assertEquals(PATIENT_FULL_NAME, analysis.patientFullName());
         assertEquals(AnalysisStatus.COMPLETED, analysis.status());
         assertEquals(ORIGINAL_FILE_NAME, analysis.originalFileName());
         assertEquals(MODEL_NAME, analysis.modelName());
         assertEquals(MODEL_VERSION, analysis.modelVersion());
         assertEquals(FILE_SIZE_BYTES, analysis.fileSizeBytes());
-        assertEquals(Instant.parse("2026-07-01T10:00:00Z"), analysis.createdAt());
-        assertEquals(Instant.parse("2026-07-01T10:00:08Z"), analysis.completedAt());
+        assertEquals(CREATED_AT, analysis.createdAt());
+        assertEquals(COMPLETED_AT, analysis.completedAt());
 
-        verify(analysisRepository).findAllAnalysisListItems();
+        verify(analysisRepository).findAllByOrderByCreatedAtDesc();
+        verify(analysisMapper).toListItemDTO(projection);
     }
 
     @ParameterizedTest
@@ -119,14 +126,14 @@ class AnalysisServiceTest {
             "100, 20"
     })
     void findRecentAnalysesUsesSafeLimit(int requestedLimit, int expectedPageSize) {
-        when(analysisRepository.findRecentAnalyses(any(Pageable.class)))
+        when(analysisRepository.findAllByOrderByCreatedAtDesc(any(Pageable.class)))
                 .thenReturn(List.of());
 
         analysisService.findRecentAnalyses(requestedLimit);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
 
-        verify(analysisRepository).findRecentAnalyses(pageableCaptor.capture());
+        verify(analysisRepository).findAllByOrderByCreatedAtDesc(pageableCaptor.capture());
 
         Pageable pageable = pageableCaptor.getValue();
 
@@ -141,8 +148,8 @@ class AnalysisServiceTest {
         when(analysisRepository.findById(ANALYSIS_ID))
                 .thenReturn(Optional.of(failedAnalysis));
 
-        when(fileStorageService.generatePresignedUrl(OBJECT_KEY))
-                .thenReturn("http://localhost:9000/medical-scans/brain-scan.jpg");
+        when(analysisMapper.toResponseDTO(failedAnalysis))
+                .thenReturn(analysisResponseDTO(AnalysisStatus.QUEUED));
 
         AnalysisResponseDTO response = analysisService.retryAnalysis(ANALYSIS_ID);
 
@@ -159,6 +166,8 @@ class AnalysisServiceTest {
         assertNull(response.completedAt());
         assertNull(response.resultObjectKey());
 
+        verify(analysisMapper).toResponseDTO(failedAnalysis);
+
         verify(auditEventService).recordEvent(
                 AuditEventType.ANALYSIS_RETRIED,
                 PATIENT_ID,
@@ -174,8 +183,8 @@ class AnalysisServiceTest {
         when(analysisRepository.findById(ANALYSIS_ID))
                 .thenReturn(Optional.of(failedAnalysis));
 
-        when(fileStorageService.generatePresignedUrl(OBJECT_KEY))
-                .thenReturn("http://localhost:9000/medical-scans/brain-scan.jpg");
+        when(analysisMapper.toResponseDTO(failedAnalysis))
+                .thenReturn(analysisResponseDTO(AnalysisStatus.QUEUED));
 
         analysisService.retryAnalysis(ANALYSIS_ID);
 
@@ -187,6 +196,8 @@ class AnalysisServiceTest {
 
         verify(analysisEventPublisher)
                 .publishAnalysisRequested(any(AnalysisRequestedEvent.class));
+
+        verify(analysisMapper).toResponseDTO(failedAnalysis);
 
         verify(auditEventService).recordEvent(
                 AuditEventType.ANALYSIS_RETRIED,
@@ -217,6 +228,8 @@ class AnalysisServiceTest {
                 any(),
                 anyString()
         );
+
+        verify(analysisMapper, never()).toResponseDTO(any(Analysis.class));
     }
 
     @Test
@@ -238,53 +251,7 @@ class AnalysisServiceTest {
                 any(),
                 anyString()
         );
-    }
 
-    private static AnalysisListItemDTO analysisListItem() {
-        return new AnalysisListItemDTO(
-                ANALYSIS_ID,
-                PATIENT_ID,
-                "John Doe",
-                AnalysisStatus.COMPLETED,
-                ORIGINAL_FILE_NAME,
-                MODEL_NAME,
-                MODEL_VERSION,
-                FILE_SIZE_BYTES,
-                Instant.parse("2026-07-01T10:00:00Z"),
-                Instant.parse("2026-07-01T10:00:08Z")
-        );
-    }
-
-    private static Analysis failedAnalysis() {
-        Analysis analysis = queuedAnalysis();
-
-        analysis.fail(
-                MODEL_NAME,
-                MODEL_VERSION,
-                "Simulated inference failure"
-        );
-
-        return analysis;
-    }
-
-    private static Analysis queuedAnalysis() {
-        Patient patient = mock(Patient.class);
-
-        when(patient.getId()).thenReturn(PATIENT_ID);
-
-        AnalysisInput analysisInput = new AnalysisInput(
-                ORIGINAL_FILE_NAME,
-                OBJECT_KEY,
-                CONTENT_TYPE,
-                FILE_SIZE_BYTES,
-                MODEL_NAME,
-                MODEL_VERSION
-        );
-
-        return Analysis.queued(
-                ANALYSIS_ID,
-                patient,
-                analysisInput
-        );
+        verify(analysisMapper, never()).toResponseDTO(any(Analysis.class));
     }
 }
