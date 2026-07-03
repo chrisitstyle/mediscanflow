@@ -9,19 +9,15 @@ import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.InvalidAnalysisStateException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.validation.FileUploadValidator;
-import com.chrisitstyle.mediscanflow.medicalplatform.messaging.AnalysisEventPublisher;
-import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisRequestedEvent;
+import com.chrisitstyle.mediscanflow.medicalplatform.messaging.outbox.OutboxEventService;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.PatientRepository;
 import com.chrisitstyle.mediscanflow.medicalplatform.storage.FileStorageService;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.Pageable;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Optional;
@@ -52,11 +48,10 @@ import static org.mockito.Mockito.when;
 class AnalysisServiceTest {
 
     private AnalysisRepository analysisRepository;
-    private AnalysisEventPublisher analysisEventPublisher;
     private AnalysisService analysisService;
     private AuditEventService auditEventService;
     private AnalysisMapper analysisMapper;
-    private AnalysisObjectKeyFactory analysisObjectKeyFactory;
+    private OutboxEventService outboxEventService;
 
     @BeforeEach
     void setUp() {
@@ -64,30 +59,21 @@ class AnalysisServiceTest {
         PatientRepository patientRepository = mock(PatientRepository.class);
         FileStorageService fileStorageService = mock(FileStorageService.class);
         FileUploadValidator fileUploadValidator = mock(FileUploadValidator.class);
-        analysisEventPublisher = mock(AnalysisEventPublisher.class);
         auditEventService = mock(AuditEventService.class);
         analysisMapper = mock(AnalysisMapper.class);
-        analysisObjectKeyFactory = mock(AnalysisObjectKeyFactory.class);
+        AnalysisObjectKeyFactory analysisObjectKeyFactory = mock(AnalysisObjectKeyFactory.class);
+        outboxEventService = mock(OutboxEventService.class);
 
         analysisService = new AnalysisService(
                 analysisRepository,
                 patientRepository,
                 fileStorageService,
                 fileUploadValidator,
-                analysisEventPublisher,
                 auditEventService,
                 analysisMapper,
-                analysisObjectKeyFactory
+                analysisObjectKeyFactory,
+                outboxEventService
         );
-
-        TransactionSynchronizationManager.initSynchronization();
-    }
-
-    @AfterEach
-    void tearDown() {
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.clearSynchronization();
-        }
     }
 
     @Test
@@ -170,6 +156,7 @@ class AnalysisServiceTest {
         assertNull(response.resultObjectKey());
 
         verify(analysisMapper).toResponseDTO(failedAnalysis);
+        verify(outboxEventService).saveAnalysisRequestedEvent(failedAnalysis);
 
         verify(auditEventService).recordEvent(
                 AuditEventType.ANALYSIS_RETRIED,
@@ -180,7 +167,7 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void retryAnalysisPublishesRequestedEventAfterCommit() {
+    void retryAnalysisStoresRequestedEventInOutbox() {
         Analysis failedAnalysis = failedAnalysis();
 
         when(analysisRepository.findById(ANALYSIS_ID))
@@ -191,23 +178,7 @@ class AnalysisServiceTest {
 
         analysisService.retryAnalysis(ANALYSIS_ID);
 
-        verify(analysisEventPublisher, never())
-                .publishAnalysisRequested(any(AnalysisRequestedEvent.class));
-
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(TransactionSynchronization::afterCommit);
-
-        verify(analysisEventPublisher)
-                .publishAnalysisRequested(any(AnalysisRequestedEvent.class));
-
-        verify(analysisMapper).toResponseDTO(failedAnalysis);
-
-        verify(auditEventService).recordEvent(
-                AuditEventType.ANALYSIS_RETRIED,
-                PATIENT_ID,
-                ANALYSIS_ID,
-                "Analysis " + ANALYSIS_ID + " was retried."
-        );
+        verify(outboxEventService).saveAnalysisRequestedEvent(failedAnalysis);
     }
 
     @Test
@@ -222,8 +193,7 @@ class AnalysisServiceTest {
                 () -> analysisService.retryAnalysis(ANALYSIS_ID)
         );
 
-        verify(analysisEventPublisher, never())
-                .publishAnalysisRequested(any(AnalysisRequestedEvent.class));
+        verify(outboxEventService, never()).saveAnalysisRequestedEvent(any(Analysis.class));
 
         verify(auditEventService, never()).recordEvent(
                 any(),
@@ -245,8 +215,7 @@ class AnalysisServiceTest {
                 () -> analysisService.retryAnalysis(ANALYSIS_ID)
         );
 
-        verify(analysisEventPublisher, never())
-                .publishAnalysisRequested(any(AnalysisRequestedEvent.class));
+        verify(outboxEventService, never()).saveAnalysisRequestedEvent(any(Analysis.class));
 
         verify(auditEventService, never()).recordEvent(
                 any(),
