@@ -1,6 +1,13 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.storage;
 
-import io.minio.*;
+import io.minio.BucketExistsArgs;
+import io.minio.GetObjectArgs;
+import io.minio.GetPresignedObjectUrlArgs;
+import io.minio.Http;
+import io.minio.MakeBucketArgs;
+import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import io.minio.errors.MinioException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -60,7 +67,10 @@ class MinioFileStorageService implements FileStorageService {
                             .build()
             );
         } catch (MinioException | IOException exception) {
-            throw new IllegalStateException("Could not upload file to MinIO", exception);
+            throw new IllegalStateException(
+                    "Could not upload file to MinIO: " + objectKey,
+                    exception
+            );
         }
     }
 
@@ -78,6 +88,23 @@ class MinioFileStorageService implements FileStorageService {
         } catch (MinioException exception) {
             throw new IllegalStateException(
                     "Could not generate presigned URL for object: " + objectKey,
+                    exception
+            );
+        }
+    }
+
+    @Override
+    public void deleteIfExists(String objectKey) {
+        try {
+            internalMinioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(properties.bucket())
+                            .object(objectKey)
+                            .build()
+            );
+        } catch (MinioException exception) {
+            throw new IllegalStateException(
+                    "Could not delete object from MinIO: " + objectKey,
                     exception
             );
         }

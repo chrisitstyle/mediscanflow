@@ -6,4 +6,5 @@ public interface FileStorageService {
     byte[] download(String objectKey);
     void upload(String objectKey, MultipartFile file);
     String generatePresignedUrl(String objectKey);
+    void deleteIfExists(String objectKey);
 }
