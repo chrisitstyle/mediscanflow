@@ -48,7 +48,7 @@ class DashboardService {
                 .forEach(status -> counts.put(status, 0L));
 
         analysisRepository.countAnalysesByStatus()
-                .forEach(statusCount -> counts.put(statusCount.status(), statusCount.count()));
+                .forEach(statusCount -> counts.put(statusCount.getStatus(), statusCount.getCount()));
 
         return Arrays.stream(AnalysisStatus.values())
                 .map(status -> new AnalysisStatusCountDTO(status, counts.get(status)))
