@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mediscanflow
+    username: mediscanflow
+    password: mediscanflow
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: mediscanflow
+    password: mediscanflow
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8081/realms/mediscanflow
+          jwk-set-uri: http://localhost:8081/realms/mediscanflow/protocol/openid-connect/certs
+
+app:
+  storage:
+    minio:
+      endpoint: http://localhost:9000
+      public-endpoint: http://localhost:9000
+      access-key: mediscanflow
+      secret-key: mediscanflow123
+      bucket: medical-scans
+      region: us-east-1
+
+mediscanflow:
+  keycloak-admin:
+    server-url: http://localhost:8081
+    realm: mediscanflow
+    client-id: mediscanflow-admin-api
+    client-secret: KAZ3XeVbTLVxds0ZojKNZ8Re6Pc5tyaL

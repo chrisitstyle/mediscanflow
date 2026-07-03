@@ -1,0 +1,35 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST}
+    port: ${SPRING_RABBITMQ_PORT}
+    username: ${SPRING_RABBITMQ_USERNAME}
+    password: ${SPRING_RABBITMQ_PASSWORD}
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI}
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI}
+
+app:
+  storage:
+    minio:
+      endpoint: ${APP_STORAGE_MINIO_ENDPOINT}
+      public-endpoint: ${APP_STORAGE_MINIO_PUBLIC_ENDPOINT}
+      access-key: ${APP_STORAGE_MINIO_ACCESS_KEY}
+      secret-key: ${APP_STORAGE_MINIO_SECRET_KEY}
+      bucket: ${APP_STORAGE_MINIO_BUCKET}
+      region: ${APP_STORAGE_MINIO_REGION:us-east-1}
+
+mediscanflow:
+  keycloak-admin:
+    server-url: ${KEYCLOAK_ADMIN_SERVER_URL}
+    realm: ${KEYCLOAK_ADMIN_REALM}
+    client-id: ${KEYCLOAK_ADMIN_CLIENT_ID}
+    client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
