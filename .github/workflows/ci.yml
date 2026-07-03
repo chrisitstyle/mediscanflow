@@ -17,8 +17,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  backend-tests:
-    name: Backend tests
+  backend:
+    name: Backend test and build
     runs-on: ubuntu-latest
 
     defaults:
@@ -42,8 +42,11 @@ jobs:
       - name: Run backend tests
         run: ./gradlew test --no-daemon
 
-  frontend-build:
-    name: Frontend build
+      - name: Build backend
+        run: ./gradlew build --no-daemon
+
+  frontend:
+    name: Frontend lint and build
     runs-on: ubuntu-latest
 
     defaults:
@@ -54,6 +57,9 @@ jobs:
       NEXT_TELEMETRY_DISABLED: "1"
       NEXT_PUBLIC_API_BASE_URL: /api/backend
       BACKEND_INTERNAL_URL: http://localhost:8080/api
+      NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:8081
+      NEXT_PUBLIC_KEYCLOAK_REALM: mediscanflow
+      NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: mediscanflow-web
 
     steps:
       - name: Checkout repository
@@ -74,5 +80,44 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Lint frontend
+        run: pnpm lint
+
       - name: Build frontend
         run: pnpm build
+
+  ai-inference:
+    name: AI inference basic check
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: services/ai-inference-service
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/ai-inference-service/requirements.txt
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Compile Python files
+        run: python -m compileall .
+
+  docker-compose:
+    name: Docker Compose config
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Validate Docker Compose config
+        run: docker compose -f infra/docker-compose.yml config
