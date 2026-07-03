@@ -1,5 +1,6 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.common.validation;
 
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.InvalidFileUploadException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
