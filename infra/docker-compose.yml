@@ -89,6 +89,7 @@ services:
     container_name: ${BACKEND_CONTAINER_NAME:-mediscanflow-medical-platform-service}
     restart: unless-stopped
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://postgres:5432/mediscanflow}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-mediscanflow}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-mediscanflow}
