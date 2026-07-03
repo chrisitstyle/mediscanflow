@@ -6,9 +6,9 @@ import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysis
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.mapper.AnalysisMapper;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventService;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
-import com.chrisitstyle.mediscanflow.medicalplatform.common.error.InvalidAnalysisStateException;
-import com.chrisitstyle.mediscanflow.medicalplatform.common.error.InvalidPatientStateException;
-import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.InvalidAnalysisStateException;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.InvalidPatientStateException;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.validation.FileUploadValidator;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.AnalysisEventPublisher;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisDetectionPayload;

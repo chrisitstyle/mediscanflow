@@ -4,8 +4,8 @@ import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisListIt
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysisDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.report.AnalysisReportService;
-import com.chrisitstyle.mediscanflow.medicalplatform.common.error.InvalidAnalysisStateException;
-import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.InvalidAnalysisStateException;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;

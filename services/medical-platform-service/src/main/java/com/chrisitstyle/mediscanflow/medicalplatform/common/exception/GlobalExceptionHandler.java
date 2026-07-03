@@ -1,6 +1,5 @@
-package com.chrisitstyle.mediscanflow.medicalplatform.common.error;
+package com.chrisitstyle.mediscanflow.medicalplatform.common.exception;
 
-import com.chrisitstyle.mediscanflow.medicalplatform.common.validation.InvalidFileUploadException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
