@@ -7,6 +7,7 @@ import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFou
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.CreatePatientRequestDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientProfileUpdateDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientResponseDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.patients.mapper.PatientMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -50,7 +51,15 @@ public class PatientService {
                 PATIENT_AUDIT_PREFIX + formatPatientName(savedPatient) + " was created."
         );
 
-        return toResponseDTO(savedPatient);
+        return PatientMapper.toResponseDTO(savedPatient);
+    }
+
+    @Transactional(readOnly = true)
+    public PatientResponseDTO findById(UUID id) {
+        Patient patient = patientRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(PATIENT_NOT_FOUND_WITH_ID_MSG + id));
+
+        return PatientMapper.toResponseDTO(patient);
     }
 
     @Transactional(readOnly = true)
@@ -65,7 +74,7 @@ public class PatientService {
                         Sort.by(Sort.Direction.DESC, "createdAt")
                 )
                 .stream()
-                .map(this::toResponseDTO)
+                .map(PatientMapper::toResponseDTO)
                 .toList();
     }
 
@@ -89,7 +98,7 @@ public class PatientService {
                 PATIENT_AUDIT_PREFIX + formatPatientName(savedPatient) + " profile was updated."
         );
 
-        return toResponseDTO(savedPatient);
+        return PatientMapper.toResponseDTO(savedPatient);
     }
 
     @Transactional
@@ -106,7 +115,7 @@ public class PatientService {
                 PATIENT_AUDIT_PREFIX + formatPatientName(patient) + " was archived."
         );
 
-        return toResponseDTO(patient);
+        return PatientMapper.toResponseDTO(patient);
     }
 
     @Transactional
@@ -123,28 +132,7 @@ public class PatientService {
                 PATIENT_AUDIT_PREFIX + formatPatientName(patient) + " was restored."
         );
 
-        return toResponseDTO(patient);
-    }
-
-    @Transactional(readOnly = true)
-    public PatientResponseDTO findById(UUID id) {
-        Patient patient = patientRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(PATIENT_NOT_FOUND_WITH_ID_MSG + id));
-
-        return toResponseDTO(patient);
-    }
-
-    private PatientResponseDTO toResponseDTO(Patient patient) {
-        return new PatientResponseDTO(
-                patient.getId(),
-                patient.getFirstName(),
-                patient.getLastName(),
-                patient.getDateOfBirth(),
-                patient.getMedicalRecordNumber(),
-                patient.getCreatedAt(),
-                patient.isArchived(),
-                patient.getArchivedAt()
-        );
+        return PatientMapper.toResponseDTO(patient);
     }
 
     private String formatPatientName(Patient patient) {
