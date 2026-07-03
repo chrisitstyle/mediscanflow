@@ -106,7 +106,10 @@ public class AnalysisService {
 
     @Transactional(readOnly = true)
     public List<AnalysisListItemDTO> findAllAnalyses() {
-        return analysisRepository.findAllAnalysisListItems();
+        return analysisRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(analysisMapper::toListItemDTO)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -122,7 +125,10 @@ public class AnalysisService {
         int safeLimit = Math.clamp(limit, 1, 20);
         Pageable pageable = PageRequest.of(0, safeLimit);
 
-        return analysisRepository.findRecentAnalyses(pageable);
+        return analysisRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .stream()
+                .map(analysisMapper::toRecentAnalysisDTO)
+                .toList();
     }
 
     @Transactional
