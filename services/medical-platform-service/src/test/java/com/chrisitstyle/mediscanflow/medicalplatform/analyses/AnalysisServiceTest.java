@@ -4,8 +4,8 @@ import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisListIt
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventService;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
-import com.chrisitstyle.mediscanflow.medicalplatform.common.error.InvalidAnalysisStateException;
-import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.InvalidAnalysisStateException;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.validation.FileUploadValidator;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.AnalysisEventPublisher;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisRequestedEvent;
