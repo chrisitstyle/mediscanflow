@@ -1,9 +1,9 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 
-import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisDetectionDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisListItemDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysisDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.mapper.AnalysisMapper;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventService;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.InvalidAnalysisStateException;
@@ -42,6 +42,7 @@ public class AnalysisService {
     private final FileUploadValidator fileUploadValidator;
     private final AnalysisEventPublisher analysisEventPublisher;
     private final AuditEventService auditEventService;
+    private final AnalysisMapper analysisMapper;
 
     @Transactional
     public AnalysisResponseDTO create(
@@ -92,7 +93,7 @@ public class AnalysisService {
 
         publishAnalysisRequestedAfterCommit(savedAnalysis);
 
-        return toResponseDTO(savedAnalysis);
+        return analysisMapper.toResponseDTO(savedAnalysis);
     }
 
     @Transactional(readOnly = true)
@@ -100,7 +101,7 @@ public class AnalysisService {
         Analysis analysis = analysisRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ANALYSIS_NOT_FOUND_MSG));
 
-        return toResponseDTO(analysis);
+        return analysisMapper.toResponseDTO(analysis);
     }
 
     @Transactional(readOnly = true)
@@ -112,7 +113,7 @@ public class AnalysisService {
     public List<AnalysisResponseDTO> findByPatientId(UUID patientId) {
         return analysisRepository.findByPatientIdOrderByCreatedAtDesc(patientId)
                 .stream()
-                .map(this::toResponseDTO)
+                .map(analysisMapper::toResponseDTO)
                 .toList();
     }
 
@@ -148,7 +149,7 @@ public class AnalysisService {
 
         publishAnalysisRequestedAfterCommit(analysis);
 
-        return toResponseDTO(analysis);
+        return analysisMapper.toResponseDTO(analysis);
     }
 
     @Transactional
@@ -201,43 +202,5 @@ public class AnalysisService {
                 : originalFilename.replaceAll("[^a-zA-Z0-9._-]", "_");
 
         return "analyses/%s/%s".formatted(analysisId, safeFilename);
-    }
-
-    private AnalysisResponseDTO toResponseDTO(Analysis analysis) {
-        String originalImageUrl = fileStorageService.generatePresignedUrl(analysis.getObjectKey());
-
-        String resultImageUrl = analysis.getResultObjectKey() == null
-                ? null
-                : fileStorageService.generatePresignedUrl(analysis.getResultObjectKey());
-
-        return new AnalysisResponseDTO(
-                analysis.getId(),
-                analysis.getPatient().getId(),
-                analysis.getStatus(),
-                analysis.getOriginalFileName(),
-                analysis.getObjectKey(),
-                originalImageUrl,
-                analysis.getResultObjectKey(),
-                resultImageUrl,
-                analysis.getContentType(),
-                analysis.getFileSizeBytes(),
-                analysis.getModelName(),
-                analysis.getModelVersion(),
-                analysis.getErrorMessage(),
-                analysis.getCreatedAt(),
-                analysis.getCompletedAt(),
-                analysis.getDetections()
-                        .stream()
-                        .map(detection -> new AnalysisDetectionDTO(
-                                detection.getId(),
-                                detection.getLabel(),
-                                detection.getConfidence(),
-                                detection.getX(),
-                                detection.getY(),
-                                detection.getWidth(),
-                                detection.getHeight()
-                        ))
-                        .toList()
-        );
     }
 }
