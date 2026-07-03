@@ -182,7 +182,7 @@ public class GlobalExceptionHandler {
                         request.getRequestURI()
                 ));
     }
-    
+
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiErrorResponseDTO> handleGenericException(
             Exception exception,

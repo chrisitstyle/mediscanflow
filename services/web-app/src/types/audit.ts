@@ -5,7 +5,8 @@ export type AuditEventType =
   | "PATIENT_RESTORED"
   | "ANALYSIS_UPLOADED"
   | "ANALYSIS_RETRIED"
-  | "REPORT_DOWNLOADED";
+  | "REPORT_DOWNLOADED"
+  | "USER_CREATED";
 
 export type AuditEvent = {
   id: string;
