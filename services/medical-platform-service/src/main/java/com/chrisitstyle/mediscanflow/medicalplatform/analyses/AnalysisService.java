@@ -20,6 +20,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -67,34 +69,40 @@ public class AnalysisService {
         );
 
         fileStorageService.upload(objectKey, file);
+        registerUploadedFileCleanupOnRollback(objectKey);
 
-        AnalysisInput analysisInput = new AnalysisInput(
-                file.getOriginalFilename(),
-                objectKey,
-                file.getContentType(),
-                file.getSize(),
-                modelName,
-                modelVersion
-        );
+        try {
+            AnalysisInput analysisInput = new AnalysisInput(
+                    file.getOriginalFilename(),
+                    objectKey,
+                    file.getContentType(),
+                    file.getSize(),
+                    modelName,
+                    modelVersion
+            );
 
-        Analysis analysis = Analysis.queued(
-                analysisId,
-                patient,
-                analysisInput
-        );
+            Analysis analysis = Analysis.queued(
+                    analysisId,
+                    patient,
+                    analysisInput
+            );
 
-        Analysis savedAnalysis = analysisRepository.save(analysis);
+            Analysis savedAnalysis = analysisRepository.save(analysis);
 
-        auditEventService.recordEvent(
-                AuditEventType.ANALYSIS_UPLOADED,
-                savedAnalysis.getPatient().getId(),
-                savedAnalysis.getId(),
-                "Scan " + savedAnalysis.getOriginalFileName() + " was uploaded for analysis."
-        );
+            auditEventService.recordEvent(
+                    AuditEventType.ANALYSIS_UPLOADED,
+                    savedAnalysis.getPatient().getId(),
+                    savedAnalysis.getId(),
+                    "Scan " + savedAnalysis.getOriginalFileName() + " was uploaded for analysis."
+            );
 
-        outboxEventService.saveAnalysisRequestedEvent(savedAnalysis);
+            outboxEventService.saveAnalysisRequestedEvent(savedAnalysis);
 
-        return analysisMapper.toResponseDTO(savedAnalysis);
+            return analysisMapper.toResponseDTO(savedAnalysis);
+        } catch (RuntimeException exception) {
+            deleteUploadedFileIfNoTransactionSynchronization(objectKey);
+            throw exception;
+        }
     }
 
     @Transactional(readOnly = true)
@@ -184,5 +192,26 @@ public class AnalysisService {
                 .orElseThrow(() -> new ResourceNotFoundException(ANALYSIS_NOT_FOUND_MSG));
 
         analysis.fail(modelName, modelVersion, errorMessage);
+    }
+
+    private void registerUploadedFileCleanupOnRollback(String objectKey) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == STATUS_ROLLED_BACK) {
+                    fileStorageService.deleteIfExists(objectKey);
+                }
+            }
+        });
+    }
+
+    private void deleteUploadedFileIfNoTransactionSynchronization(String objectKey) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            fileStorageService.deleteIfExists(objectKey);
+        }
     }
 }
