@@ -1,4 +1,8 @@
 COMPOSE_FILE=infra/docker-compose.yml
+BACKEND_DIR=services/medical-platform-service
+BACKEND_PROFILE?=dev
+
+.PHONY: up up-nc up-detached up-detached-nc down backend backend-dev backend-prod backend-test
 
 up:
 	docker compose -f $(COMPOSE_FILE) down -v
@@ -20,3 +24,15 @@ up-detached-nc:
 
 down:
 	docker compose -f $(COMPOSE_FILE) down -v
+
+backend:
+	cd $(BACKEND_DIR) && SPRING_PROFILES_ACTIVE=$(BACKEND_PROFILE) ./gradlew bootRun
+
+backend-dev:
+	cd $(BACKEND_DIR) && SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun
+
+backend-prod:
+	cd $(BACKEND_DIR) && SPRING_PROFILES_ACTIVE=prod ./gradlew bootRun
+
+backend-test:
+	cd $(BACKEND_DIR) && ./gradlew test

@@ -1,30 +1,34 @@
 services:
   postgres:
     image: postgres:16
-    container_name: mediscanflow-postgres
+    container_name: ${POSTGRES_CONTAINER_NAME:-mediscanflow-postgres}
     environment:
-      POSTGRES_DB: mediscanflow
-      POSTGRES_USER: mediscanflow
-      POSTGRES_PASSWORD: mediscanflow
+      POSTGRES_DB: ${POSTGRES_DB:-mediscanflow}
+      POSTGRES_USER: ${POSTGRES_USER:-mediscanflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mediscanflow}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - mediscanflow-postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mediscanflow -d mediscanflow"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-mediscanflow} -d ${POSTGRES_DB:-mediscanflow}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   rabbitmq:
-    image: rabbitmq:3-management
-    container_name: mediscanflow-rabbitmq
+    image: rabbitmq:4-management
+    container_name: ${RABBITMQ_CONTAINER_NAME:-mediscanflow-rabbitmq}
     environment:
-      RABBITMQ_DEFAULT_USER: mediscanflow
-      RABBITMQ_DEFAULT_PASS: mediscanflow
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-mediscanflow}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-mediscanflow}
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     volumes:
       - mediscanflow-rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
@@ -35,14 +39,14 @@ services:
 
   minio:
     image: minio/minio
-    container_name: mediscanflow-minio
+    container_name: ${MINIO_CONTAINER_NAME:-mediscanflow-minio}
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: mediscanflow
-      MINIO_ROOT_PASSWORD: mediscanflow123
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-mediscanflow}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-mediscanflow123}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - mediscanflow-minio-data:/data
     healthcheck:
@@ -53,22 +57,26 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.6.4
-    container_name: mediscanflow-keycloak
+    container_name: ${KEYCLOAK_CONTAINER_NAME:-mediscanflow-keycloak}
     command:
       - start-dev
       - --import-realm
       - --health-enabled=true
     environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_HTTP_PORT: 8080
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-admin}
+      KC_HTTP_PORT: ${KC_HTTP_PORT:-8080}
     ports:
-      - "8081:8080"
+      - "${KEYCLOAK_PORT:-8081}:8080"
     volumes:
       - mediscanflow-keycloak-data:/opt/keycloak/data
-      - ./keycloak/mediscanflow-realm.json:/opt/keycloak/data/import/mediscanflow-realm.json:ro
+      - ${KEYCLOAK_REALM_IMPORT_FILE:-./keycloak/mediscanflow-realm-dev.json}:/opt/keycloak/data/import/mediscanflow-realm.json:ro
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/8080'"]
+      test:
+        [
+          "CMD-SHELL",
+          "bash -c 'echo > /dev/tcp/127.0.0.1/${KC_HTTP_PORT:-8080}'",
+        ]
       interval: 10s
       timeout: 5s
       retries: 30
@@ -76,37 +84,37 @@ services:
 
   medical-platform-service:
     build:
-      context: ../services/medical-platform-service
+      context: ${BACKEND_BUILD_CONTEXT:-../services/medical-platform-service}
       dockerfile: Dockerfile
-    container_name: mediscanflow-medical-platform-service
+    container_name: ${BACKEND_CONTAINER_NAME:-mediscanflow-medical-platform-service}
     restart: unless-stopped
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediscanflow
-      SPRING_DATASOURCE_USERNAME: mediscanflow
-      SPRING_DATASOURCE_PASSWORD: mediscanflow
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://postgres:5432/mediscanflow}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-mediscanflow}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-mediscanflow}
 
-      SPRING_RABBITMQ_HOST: rabbitmq
-      SPRING_RABBITMQ_PORT: 5672
-      SPRING_RABBITMQ_USERNAME: mediscanflow
-      SPRING_RABBITMQ_PASSWORD: mediscanflow
+      SPRING_RABBITMQ_HOST: ${SPRING_RABBITMQ_HOST:-rabbitmq}
+      SPRING_RABBITMQ_PORT: ${SPRING_RABBITMQ_PORT:-5672}
+      SPRING_RABBITMQ_USERNAME: ${SPRING_RABBITMQ_USERNAME:-mediscanflow}
+      SPRING_RABBITMQ_PASSWORD: ${SPRING_RABBITMQ_PASSWORD:-mediscanflow}
 
-      APP_STORAGE_MINIO_ENDPOINT: http://minio:9000
-      APP_STORAGE_MINIO_PUBLIC_ENDPOINT: http://localhost:9000
-      APP_STORAGE_MINIO_ACCESS_KEY: mediscanflow
-      APP_STORAGE_MINIO_SECRET_KEY: mediscanflow123
-      APP_STORAGE_MINIO_BUCKET: medical-scans
-      APP_STORAGE_MINIO_REGION: us-east-1
+      APP_STORAGE_MINIO_ENDPOINT: ${APP_STORAGE_MINIO_ENDPOINT:-http://minio:9000}
+      APP_STORAGE_MINIO_PUBLIC_ENDPOINT: ${APP_STORAGE_MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
+      APP_STORAGE_MINIO_ACCESS_KEY: ${APP_STORAGE_MINIO_ACCESS_KEY:-mediscanflow}
+      APP_STORAGE_MINIO_SECRET_KEY: ${APP_STORAGE_MINIO_SECRET_KEY:-mediscanflow123}
+      APP_STORAGE_MINIO_BUCKET: ${APP_STORAGE_MINIO_BUCKET:-medical-scans}
+      APP_STORAGE_MINIO_REGION: ${APP_STORAGE_MINIO_REGION:-us-east-1}
 
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8081/realms/mediscanflow
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/mediscanflow/protocol/openid-connect/certs
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:-http://localhost:8081/realms/mediscanflow}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:-http://keycloak:8080/realms/mediscanflow/protocol/openid-connect/certs}
 
-      KEYCLOAK_ADMIN_SERVER_URL: http://keycloak:8080
-      KEYCLOAK_ADMIN_REALM: mediscanflow
-      KEYCLOAK_ADMIN_CLIENT_ID: mediscanflow-admin-api
-      KEYCLOAK_ADMIN_CLIENT_SECRET: KAZ3XeVbTLVxds0ZojKNZ8Re6Pc5tyaL
-
+      KEYCLOAK_ADMIN_SERVER_URL: ${KEYCLOAK_ADMIN_SERVER_URL:-http://keycloak:8080}
+      KEYCLOAK_ADMIN_REALM: ${KEYCLOAK_ADMIN_REALM:-mediscanflow}
+      KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-mediscanflow-admin-api}
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-KAZ3XeVbTLVxds0ZojKNZ8Re6Pc5tyaL}
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -129,27 +137,27 @@ services:
 
   web-app:
     build:
-      context: ../services/web-app
+      context: ${WEB_APP_BUILD_CONTEXT:-../services/web-app}
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_BASE_URL: /api/backend
-        BACKEND_INTERNAL_URL: http://medical-platform-service:8080/api
-        NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:8081
-        NEXT_PUBLIC_KEYCLOAK_REALM: mediscanflow
-        NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: mediscanflow-web
-    container_name: mediscanflow-web-app
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-/api/backend}
+        BACKEND_INTERNAL_URL: ${BACKEND_INTERNAL_URL:-http://medical-platform-service:8080/api}
+        NEXT_PUBLIC_KEYCLOAK_URL: ${NEXT_PUBLIC_KEYCLOAK_URL:-http://localhost:8081}
+        NEXT_PUBLIC_KEYCLOAK_REALM: ${NEXT_PUBLIC_KEYCLOAK_REALM:-mediscanflow}
+        NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID:-mediscanflow-web}
+    container_name: ${WEB_APP_CONTAINER_NAME:-mediscanflow-web-app}
     restart: unless-stopped
     environment:
-      NODE_ENV: production
-      PORT: 3000
-      HOSTNAME: 0.0.0.0
-      NEXT_PUBLIC_API_BASE_URL: /api/backend
-      BACKEND_INTERNAL_URL: http://medical-platform-service:8080/api
-      NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:8081
-      NEXT_PUBLIC_KEYCLOAK_REALM: mediscanflow
-      NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: mediscanflow-web
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${WEB_APP_INTERNAL_PORT:-3000}
+      HOSTNAME: ${WEB_APP_HOSTNAME:-0.0.0.0}
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-/api/backend}
+      BACKEND_INTERNAL_URL: ${BACKEND_INTERNAL_URL:-http://medical-platform-service:8080/api}
+      NEXT_PUBLIC_KEYCLOAK_URL: ${NEXT_PUBLIC_KEYCLOAK_URL:-http://localhost:8081}
+      NEXT_PUBLIC_KEYCLOAK_REALM: ${NEXT_PUBLIC_KEYCLOAK_REALM:-mediscanflow}
+      NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID:-mediscanflow-web}
     ports:
-      - "3000:3000"
+      - "${WEB_APP_PORT:-3000}:3000"
     depends_on:
       medical-platform-service:
         condition: service_healthy
@@ -168,28 +176,28 @@ services:
 
   ai-inference-service:
     build:
-      context: ../services/ai-inference-service
-      dockerfile: Dockerfile
-    container_name: mediscanflow-ai-inference-service
+      context: ${AI_INFERENCE_BUILD_CONTEXT:-../services/ai-inference-service}
+      dockerfile: ${AI_INFERENCE_DOCKERFILE:-Dockerfile}
+    container_name: ${AI_INFERENCE_CONTAINER_NAME:-mediscanflow-ai-inference-service}
     restart: unless-stopped
     environment:
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: mediscanflow
-      RABBITMQ_PASSWORD: mediscanflow
+      RABBITMQ_HOST: ${AI_RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${AI_RABBITMQ_PORT:-5672}
+      RABBITMQ_USER: ${AI_RABBITMQ_USER:-mediscanflow}
+      RABBITMQ_PASSWORD: ${AI_RABBITMQ_PASSWORD:-mediscanflow}
 
-      MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: mediscanflow
-      MINIO_SECRET_KEY: mediscanflow123
-      MINIO_BUCKET: medical-scans
-      MINIO_SECURE: false
+      MINIO_ENDPOINT: ${AI_MINIO_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${AI_MINIO_ACCESS_KEY:-mediscanflow}
+      MINIO_SECRET_KEY: ${AI_MINIO_SECRET_KEY:-mediscanflow123}
+      MINIO_BUCKET: ${AI_MINIO_BUCKET:-medical-scans}
+      MINIO_SECURE: ${AI_MINIO_SECURE:-false}
 
-      MODEL_PATH: models/yolov8n-brain-tumor.pt
-      YOLO_CONFIDENCE_THRESHOLD: 0.25
-      SIMULATE_INFERENCE_FAILURE: false
-      YOLO_CONFIG_DIR: /tmp/Ultralytics
+      MODEL_PATH: ${MODEL_PATH:-models/yolov8n-brain-tumor.pt}
+      YOLO_CONFIDENCE_THRESHOLD: ${YOLO_CONFIDENCE_THRESHOLD:-0.25}
+      SIMULATE_INFERENCE_FAILURE: ${SIMULATE_INFERENCE_FAILURE:-false}
+      YOLO_CONFIG_DIR: ${YOLO_CONFIG_DIR:-/tmp/Ultralytics}
     volumes:
-      - ../services/ai-inference-service/models:/app/models:ro
+      - ${AI_MODELS_VOLUME:-../services/ai-inference-service/models}:/app/models:ro
     depends_on:
       rabbitmq:
         condition: service_healthy

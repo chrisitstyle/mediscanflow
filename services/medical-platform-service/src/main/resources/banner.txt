@@ -1,0 +1,16 @@
+========================================
+        MEDICAL-PLATFORM-SERVICE
+========================================
+ Spring Boot:     ${spring-boot.version:null}
+ Application:     ${spring.application.name:null}
+ Profile:         ${spring.profiles.active:null}
+ Server port:     ${server.port:null}
+ Context path:    ${server.servlet.context-path:null}
+========================================
+ Datasource URL:  ${spring.datasource.url:null}
+ RabbitMQ host:   ${spring.rabbitmq.host:null}
+ RabbitMQ port:   ${spring.rabbitmq.port:null}
+ MinIO endpoint:  ${app.storage.minio.endpoint:null}
+ MinIO bucket:    ${app.storage.minio.bucket:null}
+ Keycloak issuer: ${spring.security.oauth2.resourceserver.jwt.issuer-uri:null}
+========================================
