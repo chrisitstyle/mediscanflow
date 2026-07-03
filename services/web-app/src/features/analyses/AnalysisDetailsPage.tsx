@@ -20,6 +20,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnalysisImagePreviewDialog } from "@/features/analyses/AnalysisImagePreviewDialog";
 import { DetectionTable } from "@/features/analyses/DetectionTable";
+import { AuditTimeline } from "@/features/audit/AuditTimeline";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ApiClientError } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authTokenStore";
@@ -112,6 +113,18 @@ export function AnalysisDetailsPage() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.analyses.list(),
       });
+
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.audit.analysis(retriedAnalysis.id, 10),
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.audit.patient(retriedAnalysis.patientId, 10),
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.audit.recent(10),
+      });
     },
   });
 
@@ -158,6 +171,18 @@ export function AnalysisDetailsPage() {
       link.remove();
 
       window.URL.revokeObjectURL(objectUrl);
+
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.audit.analysis(analysis.id, 10),
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.audit.patient(analysis.patientId, 10),
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.audit.recent(10),
+      });
     } catch {
       toast.error("Could not download report", {
         description: "Please try again in a moment.",
@@ -373,6 +398,17 @@ export function AnalysisDetailsPage() {
           </Card>
         </div>
       </div>
+
+      <AuditTimeline
+        scope="analysis"
+        analysisId={analysis.id}
+        limit={10}
+        title="Analysis activity"
+        description="Recent audit events for this scan analysis."
+        emptyTitle="No analysis activity"
+        emptyDescription="Audit events for this analysis will appear after upload, retry, or report download actions."
+        showLinks={false}
+      />
     </div>
   );
 }

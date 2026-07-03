@@ -10,6 +10,7 @@ import { getPatientAnalyses } from "@/api/analysesApi";
 import { archivePatient, getPatient, restorePatient } from "@/api/patientsApi";
 import { PatientAnalysesList } from "@/features/analyses/PatientAnalysesList";
 import { UploadScanDialog } from "@/features/analyses/UploadScanDialog";
+import { AuditTimeline } from "@/features/audit/AuditTimeline";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ApiClientError } from "@/lib/apiClient";
 import { canWriteMedicalData } from "@/lib/permissions";
@@ -82,6 +83,12 @@ export function PatientDetailsPage() {
         queryClient.invalidateQueries({
           queryKey: queryKeys.patients.detail(updatedPatient.id),
         }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.audit.patient(updatedPatient.id),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.audit.recent(),
+        }),
       ]);
     },
     onError: (error) => {
@@ -112,6 +119,12 @@ export function PatientDetailsPage() {
         }),
         queryClient.invalidateQueries({
           queryKey: queryKeys.patients.detail(updatedPatient.id),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.audit.patient(updatedPatient.id),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.audit.recent(),
         }),
       ]);
     },
@@ -346,6 +359,17 @@ export function PatientDetailsPage() {
       {analysesQuery.data && (
         <PatientAnalysesList analyses={analysesQuery.data} />
       )}
+
+      <AuditTimeline
+        scope="patient"
+        patientId={patient.id}
+        limit={10}
+        title="Patient activity"
+        description="Recent audit events for this patient record."
+        emptyTitle="No patient activity"
+        emptyDescription="Audit events for this patient will appear after profile changes, scan uploads, retries, or report downloads."
+        showLinks={false}
+      />
     </main>
   );
 }

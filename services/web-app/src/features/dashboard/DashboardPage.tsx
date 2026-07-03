@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { AnalysesOverTimeChartCard } from "@/features/dashboard/AnalysesOverTimeChartCard";
 import { AnalysisStatusChartCard } from "@/features/dashboard/AnalysisStatusChartCard";
 import { QuickActionsCard } from "@/features/dashboard/QuickActionsCard";
+import { RecentActivityCard } from "@/features/dashboard/RecentActivityCard";
 import { RecentAnalysesCard } from "@/features/dashboard/RecentAnalysesCard";
 import { SummaryCards } from "@/features/dashboard/SummaryCards";
 import { SystemStatusCard } from "@/features/dashboard/SystemStatusCard";
@@ -47,6 +48,8 @@ export function DashboardPage() {
           <QuickActionsCard />
         </div>
       </div>
+
+      <RecentActivityCard />
     </main>
   );
 }

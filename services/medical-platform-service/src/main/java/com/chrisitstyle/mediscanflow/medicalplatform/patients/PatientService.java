@@ -1,5 +1,7 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.patients;
 
+import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventService;
+import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.DuplicateResourceException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.CreatePatientRequestDTO;
@@ -17,6 +19,7 @@ import java.util.UUID;
 public class PatientService {
 
     private final PatientRepository patientRepository;
+    private final AuditEventService auditEventService;
 
     @Transactional
     public PatientResponseDTO create(CreatePatientRequestDTO request) {
@@ -34,6 +37,13 @@ public class PatientService {
         );
 
         Patient savedPatient = patientRepository.save(patient);
+
+        auditEventService.recordEvent(
+                AuditEventType.PATIENT_CREATED,
+                savedPatient.getId(),
+                null,
+                "Patient " + formatPatientName(savedPatient) + " was created."
+        );
 
         return toResponseDTO(savedPatient);
     }
@@ -70,7 +80,16 @@ public class PatientService {
                 request.dateOfBirth()
         );
 
-        return toResponseDTO(patientRepository.save(patient));
+        Patient savedPatient = patientRepository.save(patient);
+
+        auditEventService.recordEvent(
+                AuditEventType.PATIENT_PROFILE_UPDATED,
+                savedPatient.getId(),
+                null,
+                "Patient " + formatPatientName(savedPatient) + " profile was updated."
+        );
+
+        return toResponseDTO(savedPatient);
     }
 
     @Transactional
@@ -79,6 +98,13 @@ public class PatientService {
                 .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + patientId));
 
         patient.archive();
+
+        auditEventService.recordEvent(
+                AuditEventType.PATIENT_ARCHIVED,
+                patient.getId(),
+                null,
+                "Patient " + formatPatientName(patient) + " was archived."
+        );
 
         return toResponseDTO(patient);
     }
@@ -89,6 +115,13 @@ public class PatientService {
                 .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + patientId));
 
         patient.restore();
+
+        auditEventService.recordEvent(
+                AuditEventType.PATIENT_RESTORED,
+                patient.getId(),
+                null,
+                "Patient " + formatPatientName(patient) + " was restored."
+        );
 
         return toResponseDTO(patient);
     }
@@ -112,5 +145,9 @@ public class PatientService {
                 patient.isArchived(),
                 patient.getArchivedAt()
         );
+    }
+
+    private String formatPatientName(Patient patient) {
+        return patient.getFirstName() + " " + patient.getLastName();
     }
 }

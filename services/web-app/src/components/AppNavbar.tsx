@@ -17,6 +17,7 @@ const navItems = [
   { href: "/", label: "Dashboard" },
   { href: "/patients", label: "Patients" },
   { href: "/analyses", label: "Analyses" },
+  { href: "/activity", label: "Activity" },
 ];
 
 const ROLE_LABELS = {

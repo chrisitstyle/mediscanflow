@@ -4,6 +4,8 @@ import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisDetect
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisListItemDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysisDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventService;
+import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.InvalidAnalysisStateException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.InvalidPatientStateException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
@@ -35,6 +37,7 @@ public class AnalysisService {
     private final FileStorageService fileStorageService;
     private final FileUploadValidator fileUploadValidator;
     private final AnalysisEventPublisher analysisEventPublisher;
+    private final AuditEventService auditEventService;
 
     @Transactional
     public AnalysisResponseDTO create(
@@ -71,6 +74,13 @@ public class AnalysisService {
         );
 
         Analysis savedAnalysis = analysisRepository.save(analysis);
+
+        auditEventService.recordEvent(
+                AuditEventType.ANALYSIS_UPLOADED,
+                savedAnalysis.getPatient().getId(),
+                savedAnalysis.getId(),
+                "Scan " + savedAnalysis.getOriginalFileName() + " was uploaded for analysis."
+        );
 
         publishAnalysisRequestedAfterCommit(savedAnalysis);
 
@@ -120,6 +130,13 @@ public class AnalysisService {
         }
 
         analysis.retry();
+
+        auditEventService.recordEvent(
+                AuditEventType.ANALYSIS_RETRIED,
+                analysis.getPatient().getId(),
+                analysis.getId(),
+                "Analysis " + analysis.getId() + " was retried."
+        );
 
         publishAnalysisRequestedAfterCommit(analysis);
 

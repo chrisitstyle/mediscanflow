@@ -4,16 +4,14 @@ import com.chrisitstyle.mediscanflow.medicalplatform.analyses.Analysis;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisDetection;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisRepository;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisStatus;
+import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventService;
+import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.Patient;
 import com.chrisitstyle.mediscanflow.medicalplatform.storage.FileStorageService;
-import org.openpdf.text.Document;
-import org.openpdf.text.Element;
+import org.openpdf.text.*;
 import org.openpdf.text.Font;
 import org.openpdf.text.Image;
-import org.openpdf.text.PageSize;
-import org.openpdf.text.Paragraph;
-import org.openpdf.text.Phrase;
 import org.openpdf.text.Rectangle;
 import org.openpdf.text.pdf.PdfPCell;
 import org.openpdf.text.pdf.PdfPTable;
@@ -23,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.awt.Color;
+import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -34,6 +32,10 @@ import java.util.UUID;
 
 @Service
 public class AnalysisReportService {
+
+    private final AnalysisRepository analysisRepository;
+    private final FileStorageService storageService;
+    private final AuditEventService auditEventService;
 
     private static final Logger log = LoggerFactory.getLogger(AnalysisReportService.class);
 
@@ -65,18 +67,19 @@ public class AnalysisReportService {
     private static final Font STATUS_FONT = new Font(Font.HELVETICA, 9, Font.BOLD, WHITE);
     private static final Font FOOTER_FONT = new Font(Font.HELVETICA, 8, Font.NORMAL, TEXT_MUTED);
 
-    private final AnalysisRepository analysisRepository;
-    private final FileStorageService storageService;
 
     public AnalysisReportService(
             AnalysisRepository analysisRepository,
-            FileStorageService storageService
+            FileStorageService storageService,
+            AuditEventService auditEventService
     ) {
         this.analysisRepository = analysisRepository;
         this.storageService = storageService;
+        this.auditEventService = auditEventService;
+
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public byte[] generateReport(UUID analysisId) {
         Analysis analysis = analysisRepository.findById(analysisId)
                 .orElseThrow(() -> new ResourceNotFoundException("Analysis not found with id: " + analysisId));
@@ -97,7 +100,17 @@ public class AnalysisReportService {
 
             document.close();
 
-            return outputStream.toByteArray();
+            byte[] report = outputStream.toByteArray();
+
+            auditEventService.recordEvent(
+                    AuditEventType.REPORT_DOWNLOADED,
+                    analysis.getPatient().getId(),
+                    analysis.getId(),
+                    "PDF report was downloaded for analysis " + analysis.getId() + "."
+            );
+
+            return report;
+
         } catch (Exception exception) {
             log.error("Could not generate analysis report for analysisId={}", analysisId, exception);
             throw new IllegalStateException("Could not generate analysis report.", exception);
