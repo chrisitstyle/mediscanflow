@@ -3,7 +3,10 @@ package com.chrisitstyle.mediscanflow.medicalplatform.analyses.mapper;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.Analysis;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisDetection;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisDetectionDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisListItemDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisResponseDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.RecentAnalysisDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.analyses.projection.AnalysisSummaryProjection;
 import com.chrisitstyle.mediscanflow.medicalplatform.storage.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -54,5 +57,39 @@ public class AnalysisMapper {
                 detection.getWidth(),
                 detection.getHeight()
         );
+    }
+
+    public AnalysisListItemDTO toListItemDTO(AnalysisSummaryProjection analysis) {
+        return new AnalysisListItemDTO(
+                analysis.getId(),
+                analysis.getPatient().getId(),
+                formatPatientName(analysis.getPatient()),
+                analysis.getStatus(),
+                analysis.getOriginalFileName(),
+                analysis.getModelName(),
+                analysis.getModelVersion(),
+                analysis.getFileSizeBytes(),
+                analysis.getCreatedAt(),
+                analysis.getCompletedAt()
+        );
+    }
+
+    public RecentAnalysisDTO toRecentAnalysisDTO(AnalysisSummaryProjection analysis) {
+        return new RecentAnalysisDTO(
+                analysis.getId(),
+                analysis.getPatient().getId(),
+                formatPatientName(analysis.getPatient()),
+                analysis.getStatus(),
+                analysis.getOriginalFileName(),
+                analysis.getModelName(),
+                analysis.getModelVersion(),
+                analysis.getFileSizeBytes(),
+                analysis.getCreatedAt(),
+                analysis.getCompletedAt()
+        );
+    }
+
+    private String formatPatientName(AnalysisSummaryProjection.PatientProjection patient) {
+        return patient.getFirstName() + " " + patient.getLastName();
     }
 }
