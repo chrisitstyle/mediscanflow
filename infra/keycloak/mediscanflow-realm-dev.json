@@ -32,11 +32,11 @@
       "directAccessGrantsEnabled": false,
       "implicitFlowEnabled": false,
       "serviceAccountsEnabled": false,
-      "redirectUris": ["https://CHANGE_IN_PRODUCTION/*"],
-      "webOrigins": ["https://CHANGE_IN_PRODUCTION"],
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "https://CHANGE_IN_PRODUCTION/*"
+        "post.logout.redirect.uris": "http://localhost:3000/*"
       }
     },
     {
@@ -46,7 +46,7 @@
       "publicClient": false,
       "protocol": "openid-connect",
       "clientAuthenticatorType": "client-secret",
-      "secret": "CHANGE_IN_PRODUCTION",
+      "secret": "KAZ3XeVbTLVxds0ZojKNZ8Re6Pc5tyaL",
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "implicitFlowEnabled": false,
@@ -57,6 +57,54 @@
     }
   ],
   "users": [
+    {
+      "username": "admin@mediscanflow.com",
+      "email": "admin@mediscanflow.com",
+      "firstName": "Admin",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ADMIN"]
+    },
+    {
+      "username": "doctor@mediscanflow.com",
+      "email": "doctor@mediscanflow.com",
+      "firstName": "Demo",
+      "lastName": "Doctor",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Doctor123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["DOCTOR"]
+    },
+    {
+      "username": "staff@mediscanflow.com",
+      "email": "staff@mediscanflow.com",
+      "firstName": "Staff",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Staff123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["STAFF"]
+    },
     {
       "username": "service-account-mediscanflow-admin-api",
       "enabled": true,
