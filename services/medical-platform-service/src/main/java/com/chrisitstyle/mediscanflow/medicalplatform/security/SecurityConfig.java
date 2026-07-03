@@ -1,6 +1,7 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.security;
 
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.SecurityConfigurationException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;

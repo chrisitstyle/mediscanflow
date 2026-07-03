@@ -1,4 +1,4 @@
-package com.chrisitstyle.mediscanflow.medicalplatform.common.validation;
+package com.chrisitstyle.mediscanflow.medicalplatform.common.exception;
 
 public class InvalidFileUploadException extends RuntimeException {
 

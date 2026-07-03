@@ -2,8 +2,8 @@ package com.chrisitstyle.mediscanflow.medicalplatform.patients;
 
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventService;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
-import com.chrisitstyle.mediscanflow.medicalplatform.common.error.DuplicateResourceException;
-import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.DuplicateResourceException;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.CreatePatientRequestDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientProfileUpdateDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientResponseDTO;

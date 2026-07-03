@@ -1,4 +1,4 @@
-package com.chrisitstyle.mediscanflow.medicalplatform.common.error;
+package com.chrisitstyle.mediscanflow.medicalplatform.common.exception;
 
 import java.time.Instant;
 import java.util.Map;

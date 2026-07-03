@@ -1,4 +1,4 @@
-package com.chrisitstyle.mediscanflow.medicalplatform.security;
+package com.chrisitstyle.mediscanflow.medicalplatform.common.exception;
 
 public class SecurityConfigurationException extends RuntimeException {
 

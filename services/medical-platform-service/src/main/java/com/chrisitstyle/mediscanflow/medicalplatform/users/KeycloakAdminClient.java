@@ -1,7 +1,7 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.users;
 
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole;
-import com.chrisitstyle.mediscanflow.medicalplatform.common.error.UserManagementException;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.UserManagementException;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;

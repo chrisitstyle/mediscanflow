@@ -4,7 +4,7 @@ import com.chrisitstyle.mediscanflow.medicalplatform.analyses.Analysis;
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisRepository;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventService;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
-import com.chrisitstyle.mediscanflow.medicalplatform.common.error.ResourceNotFoundException;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
