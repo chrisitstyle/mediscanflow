@@ -21,7 +21,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PatientService {
 
-    private static final String PATIENT_AUDIT_PREFIX = "Patient ";
     private static final String PATIENT_NOT_FOUND_WITH_ID_MSG = "Patient not found with id: ";
 
     private final PatientRepository patientRepository;
@@ -48,7 +47,7 @@ public class PatientService {
                 AuditEventType.PATIENT_CREATED,
                 savedPatient.getId(),
                 null,
-                PATIENT_AUDIT_PREFIX + formatPatientName(savedPatient) + " was created."
+                patientCreatedMessage(savedPatient)
         );
 
         return PatientMapper.toResponseDTO(savedPatient);
@@ -95,7 +94,7 @@ public class PatientService {
                 AuditEventType.PATIENT_PROFILE_UPDATED,
                 savedPatient.getId(),
                 null,
-                PATIENT_AUDIT_PREFIX + formatPatientName(savedPatient) + " profile was updated."
+                patientProfileUpdatedMessage(savedPatient)
         );
 
         return PatientMapper.toResponseDTO(savedPatient);
@@ -112,7 +111,7 @@ public class PatientService {
                 AuditEventType.PATIENT_ARCHIVED,
                 patient.getId(),
                 null,
-                PATIENT_AUDIT_PREFIX + formatPatientName(patient) + " was archived."
+                patientArchivedMessage(patient)
         );
 
         return PatientMapper.toResponseDTO(patient);
@@ -129,13 +128,29 @@ public class PatientService {
                 AuditEventType.PATIENT_RESTORED,
                 patient.getId(),
                 null,
-                PATIENT_AUDIT_PREFIX + formatPatientName(patient) + " was restored."
+                patientRestoredMessage(patient)
         );
 
         return PatientMapper.toResponseDTO(patient);
     }
 
+    private String patientCreatedMessage(Patient patient) {
+        return "Patient %s was created.".formatted(formatPatientName(patient));
+    }
+
+    private String patientProfileUpdatedMessage(Patient patient) {
+        return "Patient %s profile was updated.".formatted(formatPatientName(patient));
+    }
+
+    private String patientArchivedMessage(Patient patient) {
+        return "Patient %s was archived.".formatted(formatPatientName(patient));
+    }
+
+    private String patientRestoredMessage(Patient patient) {
+        return "Patient %s was restored.".formatted(formatPatientName(patient));
+    }
+
     private String formatPatientName(Patient patient) {
-        return patient.getFirstName() + " " + patient.getLastName();
+        return "%s %s".formatted(patient.getFirstName(), patient.getLastName());
     }
 }
