@@ -34,7 +34,6 @@ public class AnalysisService {
 
     private static final String ANALYSIS_NOT_FOUND_MSG = "Analysis not found";
     private static final String PATIENT_NOT_FOUND_MSG = "Patient not found";
-    private static final String DEFAULT_INPUT_FILENAME = "input";
 
     private final AnalysisRepository analysisRepository;
     private final PatientRepository patientRepository;
@@ -43,6 +42,7 @@ public class AnalysisService {
     private final AnalysisEventPublisher analysisEventPublisher;
     private final AuditEventService auditEventService;
     private final AnalysisMapper analysisMapper;
+    private final AnalysisObjectKeyFactory analysisObjectKeyFactory;
 
     @Transactional
     public AnalysisResponseDTO create(
@@ -63,7 +63,9 @@ public class AnalysisService {
         }
 
         UUID analysisId = UUID.randomUUID();
-        String objectKey = buildObjectKey(analysisId, file.getOriginalFilename());
+        String objectKey = analysisObjectKeyFactory.create(analysisId,
+                file.getOriginalFilename()
+        );
 
         fileStorageService.upload(objectKey, file);
 
@@ -200,13 +202,5 @@ public class AnalysisService {
                 analysisEventPublisher.publishAnalysisRequested(event);
             }
         });
-    }
-
-    private String buildObjectKey(UUID analysisId, String originalFilename) {
-        String safeFilename = originalFilename == null
-                ? DEFAULT_INPUT_FILENAME
-                : originalFilename.replaceAll("[^a-zA-Z0-9._-]", "_");
-
-        return "analyses/%s/%s".formatted(analysisId, safeFilename);
     }
 }
