@@ -93,7 +93,7 @@ public class AnalysisService {
                     AuditEventType.ANALYSIS_UPLOADED,
                     savedAnalysis.getPatient().getId(),
                     savedAnalysis.getId(),
-                    "Scan " + savedAnalysis.getOriginalFileName() + " was uploaded for analysis."
+                    analysisUploadedMessage(savedAnalysis)
             );
 
             outboxEventService.saveAnalysisRequestedEvent(savedAnalysis);
@@ -159,7 +159,7 @@ public class AnalysisService {
                 AuditEventType.ANALYSIS_RETRIED,
                 analysis.getPatient().getId(),
                 analysis.getId(),
-                "Analysis " + analysis.getId() + " was retried."
+                analysisRetriedMessage(analysis)
         );
 
         outboxEventService.saveAnalysisRequestedEvent(analysis);
@@ -213,5 +213,15 @@ public class AnalysisService {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             fileStorageService.deleteIfExists(objectKey);
         }
+    }
+
+    private String analysisUploadedMessage(Analysis analysis) {
+        return "Scan %s was uploaded for analysis."
+                .formatted(analysis.getOriginalFileName());
+    }
+
+    private String analysisRetriedMessage(Analysis analysis) {
+        return "Analysis %s was retried."
+                .formatted(analysis.getId());
     }
 }
