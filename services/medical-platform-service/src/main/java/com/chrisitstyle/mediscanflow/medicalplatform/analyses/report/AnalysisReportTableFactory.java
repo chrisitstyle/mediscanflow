@@ -157,7 +157,7 @@ class AnalysisReportTableFactory {
         cell.setBorderColor(BORDER);
 
         if (alignRight) {
-            cell.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_RIGHT);
+            cell.setHorizontalAlignment(org.openpdf.text.Element.ALIGN_RIGHT);
         }
 
         table.addCell(cell);

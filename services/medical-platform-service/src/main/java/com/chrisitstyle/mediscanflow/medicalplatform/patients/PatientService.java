@@ -55,17 +55,9 @@ public class PatientService {
     public List<PatientResponseDTO> findAll(String search, boolean includeArchived) {
         String normalizedSearch = search == null ? null : search.trim();
 
-        List<Patient> patients;
-
-        if (normalizedSearch == null || normalizedSearch.isBlank()) {
-            patients = includeArchived
-                    ? patientRepository.findAllByOrderByCreatedAtDesc()
-                    : patientRepository.findAllByArchivedFalseOrderByCreatedAtDesc();
-        } else {
-            patients = includeArchived
-                    ? patientRepository.searchByText(normalizedSearch)
-                    : patientRepository.searchActiveByText(normalizedSearch);
-        }
+        List<Patient> patients = normalizedSearch == null || normalizedSearch.isBlank()
+                ? patientRepository.findAllByArchiveFilter(includeArchived)
+                : patientRepository.searchByText(normalizedSearch, includeArchived);
 
         return patients.stream()
                 .map(this::toResponseDTO)
