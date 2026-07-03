@@ -12,6 +12,7 @@ import com.chrisitstyle.mediscanflow.medicalplatform.common.validation.FileUploa
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.outbox.OutboxEventService;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.PatientRepository;
 import com.chrisitstyle.mediscanflow.medicalplatform.storage.FileStorageService;
+import com.chrisitstyle.mediscanflow.medicalplatform.storage.UploadedFileCleanupService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -63,6 +64,7 @@ class AnalysisServiceTest {
         analysisMapper = mock(AnalysisMapper.class);
         AnalysisObjectKeyFactory analysisObjectKeyFactory = mock(AnalysisObjectKeyFactory.class);
         outboxEventService = mock(OutboxEventService.class);
+        UploadedFileCleanupService uploadedFileCleanupService = mock(UploadedFileCleanupService.class);
 
         analysisService = new AnalysisService(
                 analysisRepository,
@@ -72,7 +74,8 @@ class AnalysisServiceTest {
                 auditEventService,
                 analysisMapper,
                 analysisObjectKeyFactory,
-                outboxEventService
+                outboxEventService,
+                uploadedFileCleanupService
         );
     }
 
