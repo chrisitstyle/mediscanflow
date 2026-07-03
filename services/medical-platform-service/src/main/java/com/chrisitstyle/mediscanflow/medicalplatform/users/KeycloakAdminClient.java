@@ -1,0 +1,186 @@
+package com.chrisitstyle.mediscanflow.medicalplatform.users;
+
+import com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.error.UserManagementException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClient;
+
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+
+@Component
+public class KeycloakAdminClient {
+
+    private final RestClient restClient;
+    private final KeycloakAdminProperties properties;
+
+    public KeycloakAdminClient(KeycloakAdminProperties properties) {
+        this.properties = properties;
+        this.restClient = RestClient.builder()
+                .baseUrl(properties.serverUrl())
+                .build();
+    }
+
+    public String createUser(
+            String firstName,
+            String lastName,
+            String email,
+            String temporaryPassword,
+            UserRole role
+    ) {
+        String accessToken = getAdminAccessToken();
+
+        try {
+            URI location = restClient.post()
+                    .uri("/admin/realms/{realm}/users", properties.realm())
+                    .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(createUserPayload(firstName, lastName, email, temporaryPassword))
+                    .retrieve()
+                    .toBodilessEntity()
+                    .getHeaders()
+                    .getLocation();
+
+            if (location == null) {
+                throw new UserManagementException("Keycloak did not return created user location.");
+            }
+
+            String userId = extractUserId(location);
+
+            assignRealmRole(accessToken, userId, role);
+
+            return userId;
+        } catch (HttpClientErrorException.Conflict exception) {
+            throw new UserManagementException("User with this email already exists.", exception);
+        } catch (HttpClientErrorException exception) {
+            throw new UserManagementException(
+                    "Keycloak rejected user creation request: " + exception.getStatusCode(),
+                    exception
+            );
+        }
+    }
+
+    private String getAdminAccessToken() {
+        try {
+            KeycloakTokenResponse response = restClient.post()
+                    .uri("/realms/{realm}/protocol/openid-connect/token", properties.realm())
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(
+                            "grant_type=client_credentials" +
+                                    "&client_id=" + properties.clientId() +
+                                    "&client_secret=" + properties.clientSecret()
+                    )
+                    .retrieve()
+                    .body(KeycloakTokenResponse.class);
+
+            if (response == null || response.accessToken() == null || response.accessToken().isBlank()) {
+                throw new UserManagementException("Could not obtain Keycloak admin access token.");
+            }
+
+            return response.accessToken();
+        } catch (HttpClientErrorException exception) {
+            throw new UserManagementException(
+                    "Could not obtain Keycloak admin access token: " + exception.getStatusCode(),
+                    exception
+            );
+        }
+    }
+
+    private Map<String, Object> createUserPayload(
+            String firstName,
+            String lastName,
+            String email,
+            String temporaryPassword
+    ) {
+        return Map.of(
+                "username", email,
+                "email", email,
+                "firstName", firstName,
+                "lastName", lastName,
+                "enabled", true,
+                "emailVerified", true,
+                "credentials", List.of(
+                        Map.of(
+                                "type", "password",
+                                "value", temporaryPassword,
+                                "temporary", true
+                        )
+                )
+        );
+    }
+
+    private void assignRealmRole(String accessToken, String userId, UserRole role) {
+        KeycloakRoleRepresentation roleRepresentation = getRealmRole(accessToken, role);
+
+        try {
+            restClient.post()
+                    .uri(
+                            "/admin/realms/{realm}/users/{userId}/role-mappings/realm",
+                            properties.realm(),
+                            userId
+                    )
+                    .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(List.of(roleRepresentation))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (HttpClientErrorException exception) {
+            throw new UserManagementException(
+                    "Could not assign role " + role.name() + " to user.",
+                    exception
+            );
+        }
+    }
+
+    private KeycloakRoleRepresentation getRealmRole(String accessToken, UserRole role) {
+        try {
+            KeycloakRoleRepresentation roleRepresentation = restClient.get()
+                    .uri("/admin/realms/{realm}/roles/{roleName}", properties.realm(), role.name())
+                    .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                    .retrieve()
+                    .body(KeycloakRoleRepresentation.class);
+
+            if (roleRepresentation == null) {
+                throw new UserManagementException("Keycloak role not found: " + role.name());
+            }
+
+            return roleRepresentation;
+        } catch (HttpClientErrorException exception) {
+            throw new UserManagementException(
+                    "Could not load Keycloak role: " + role.name(),
+                    exception
+            );
+        }
+    }
+
+    private String extractUserId(URI location) {
+        String path = location.getPath();
+        int lastSlashIndex = path.lastIndexOf('/');
+
+        if (lastSlashIndex < 0 || lastSlashIndex == path.length() - 1) {
+            throw new UserManagementException("Could not extract created user id from Keycloak location.");
+        }
+
+        return path.substring(lastSlashIndex + 1);
+    }
+
+    private String bearer(String accessToken) {
+        return "Bearer " + accessToken;
+    }
+
+    private record KeycloakTokenResponse(
+            @com.fasterxml.jackson.annotation.JsonProperty("access_token")
+            String accessToken
+    ) {
+    }
+
+    private record KeycloakRoleRepresentation(
+            String id,
+            String name
+    ) {
+    }
+}

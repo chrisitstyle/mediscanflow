@@ -53,3 +53,10 @@ app:
       allowed-content-types:
         - image/jpeg
         - image/png
+
+mediscanflow:
+  keycloak-admin:
+    server-url: ${KEYCLOAK_ADMIN_SERVER_URL:http://localhost:8081}
+    realm: ${KEYCLOAK_ADMIN_REALM:mediscanflow}
+    client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:mediscanflow-admin-api}
+    client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:change-me}
