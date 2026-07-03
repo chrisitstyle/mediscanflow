@@ -8,6 +8,8 @@ import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.CreatePatientR
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientProfileUpdateDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientResponseDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,7 +21,7 @@ import java.util.UUID;
 public class PatientService {
 
     private static final String PATIENT_AUDIT_PREFIX = "Patient ";
-    private static final String PATIENT_NOT_FOUND_WITH_ID_MESSAGE = "Patient not found with id: ";
+    private static final String PATIENT_NOT_FOUND_WITH_ID_MSG = "Patient not found with id: ";
 
     private final PatientRepository patientRepository;
     private final AuditEventService auditEventService;
@@ -53,13 +55,16 @@ public class PatientService {
 
     @Transactional(readOnly = true)
     public List<PatientResponseDTO> findAll(String search, boolean includeArchived) {
-        String normalizedSearch = search == null ? null : search.trim();
+        Specification<Patient> specification = Specification.allOf(
+                PatientSpecifications.archiveFilter(includeArchived),
+                PatientSpecifications.textSearch(search)
+        );
 
-        List<Patient> patients = normalizedSearch == null || normalizedSearch.isBlank()
-                ? patientRepository.findAllByArchiveFilter(includeArchived)
-                : patientRepository.searchByText(normalizedSearch, includeArchived);
-
-        return patients.stream()
+        return patientRepository.findAll(
+                        specification,
+                        Sort.by(Sort.Direction.DESC, "createdAt")
+                )
+                .stream()
                 .map(this::toResponseDTO)
                 .toList();
     }
@@ -67,7 +72,7 @@ public class PatientService {
     @Transactional
     public PatientResponseDTO updatePatientProfile(UUID patientId, PatientProfileUpdateDTO request) {
         Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new ResourceNotFoundException(PATIENT_NOT_FOUND_WITH_ID_MESSAGE + patientId));
+                .orElseThrow(() -> new ResourceNotFoundException(PATIENT_NOT_FOUND_WITH_ID_MSG + patientId));
 
         patient.updateProfile(
                 request.firstName().trim(),
@@ -90,7 +95,7 @@ public class PatientService {
     @Transactional
     public PatientResponseDTO archivePatient(UUID patientId) {
         Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new ResourceNotFoundException(PATIENT_NOT_FOUND_WITH_ID_MESSAGE + patientId));
+                .orElseThrow(() -> new ResourceNotFoundException(PATIENT_NOT_FOUND_WITH_ID_MSG + patientId));
 
         patient.archive();
 
@@ -107,7 +112,7 @@ public class PatientService {
     @Transactional
     public PatientResponseDTO restorePatient(UUID patientId) {
         Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new ResourceNotFoundException(PATIENT_NOT_FOUND_WITH_ID_MESSAGE + patientId));
+                .orElseThrow(() -> new ResourceNotFoundException(PATIENT_NOT_FOUND_WITH_ID_MSG + patientId));
 
         patient.restore();
 
@@ -124,7 +129,7 @@ public class PatientService {
     @Transactional(readOnly = true)
     public PatientResponseDTO findById(UUID id) {
         Patient patient = patientRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(PATIENT_NOT_FOUND_WITH_ID_MSG + id));
 
         return toResponseDTO(patient);
     }
