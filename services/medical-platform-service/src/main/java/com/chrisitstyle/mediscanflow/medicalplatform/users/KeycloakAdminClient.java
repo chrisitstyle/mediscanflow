@@ -2,9 +2,12 @@ package com.chrisitstyle.mediscanflow.medicalplatform.users;
 
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.error.UserManagementException;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
@@ -14,6 +17,21 @@ import java.util.Map;
 
 @Component
 public class KeycloakAdminClient {
+
+    private static final String TOKEN_URI =
+            "/realms/{realm}/protocol/openid-connect/token";
+
+    private static final String USERS_URI =
+            "/admin/realms/{realm}/users";
+
+    private static final String USER_REALM_ROLE_MAPPING_URI =
+            "/admin/realms/{realm}/users/{userId}/role-mappings/realm";
+
+    private static final String REALM_ROLE_URI =
+            "/admin/realms/{realm}/roles/{roleName}";
+
+    private static final String CLIENT_CREDENTIALS_GRANT_TYPE =
+            "client_credentials";
 
     private final RestClient restClient;
     private final KeycloakAdminProperties properties;
@@ -36,7 +54,7 @@ public class KeycloakAdminClient {
 
         try {
             URI location = restClient.post()
-                    .uri("/admin/realms/{realm}/users", properties.realm())
+                    .uri(USERS_URI, properties.realm())
                     .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(createUserPayload(firstName, lastName, email, temporaryPassword))
@@ -67,13 +85,9 @@ public class KeycloakAdminClient {
     private String getAdminAccessToken() {
         try {
             KeycloakTokenResponse response = restClient.post()
-                    .uri("/realms/{realm}/protocol/openid-connect/token", properties.realm())
+                    .uri(TOKEN_URI, properties.realm())
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .body(
-                            "grant_type=client_credentials" +
-                                    "&client_id=" + properties.clientId() +
-                                    "&client_secret=" + properties.clientSecret()
-                    )
+                    .body(createTokenRequestBody())
                     .retrieve()
                     .body(KeycloakTokenResponse.class);
 
@@ -88,6 +102,16 @@ public class KeycloakAdminClient {
                     exception
             );
         }
+    }
+
+    private MultiValueMap<String, String> createTokenRequestBody() {
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+
+        body.add("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE);
+        body.add("client_id", properties.clientId());
+        body.add("client_secret", properties.clientSecret());
+
+        return body;
     }
 
     private Map<String, Object> createUserPayload(
@@ -119,7 +143,7 @@ public class KeycloakAdminClient {
         try {
             restClient.post()
                     .uri(
-                            "/admin/realms/{realm}/users/{userId}/role-mappings/realm",
+                            USER_REALM_ROLE_MAPPING_URI,
                             properties.realm(),
                             userId
                     )
@@ -139,7 +163,7 @@ public class KeycloakAdminClient {
     private KeycloakRoleRepresentation getRealmRole(String accessToken, UserRole role) {
         try {
             KeycloakRoleRepresentation roleRepresentation = restClient.get()
-                    .uri("/admin/realms/{realm}/roles/{roleName}", properties.realm(), role.name())
+                    .uri(REALM_ROLE_URI, properties.realm(), role.name())
                     .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                     .retrieve()
                     .body(KeycloakRoleRepresentation.class);
@@ -173,7 +197,8 @@ public class KeycloakAdminClient {
     }
 
     private record KeycloakTokenResponse(
-            @com.fasterxml.jackson.annotation.JsonProperty("access_token")
+
+            @JsonProperty("access_token")
             String accessToken
     ) {
     }

@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.chrisitstyle.mediscanflow.medicalplatform.testentities.PatientTestEntity.patient;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -33,6 +35,7 @@ class PatientServiceTest {
 
     @Mock
     private PatientRepository patientRepository;
+
     @Mock
     private AuditEventService auditEventService;
 
@@ -43,7 +46,7 @@ class PatientServiceTest {
     void findAllReturnsActivePatientsWhenSearchIsNull() {
         Patient patient = patient();
 
-        when(patientRepository.findAllByArchivedFalseOrderByCreatedAtDesc())
+        when(patientRepository.findAllByArchiveFilter(false))
                 .thenReturn(List.of(patient));
 
         List<PatientResponseDTO> patients = patientService.findAll(null, false);
@@ -51,17 +54,15 @@ class PatientServiceTest {
         assertEquals(1, patients.size());
         assertPatientResponse(patients.getFirst());
 
-        verify(patientRepository).findAllByArchivedFalseOrderByCreatedAtDesc();
-        verify(patientRepository, never()).findAllByOrderByCreatedAtDesc();
-        verify(patientRepository, never()).searchByText(anyString());
-        verify(patientRepository, never()).searchActiveByText(anyString());
+        verify(patientRepository).findAllByArchiveFilter(false);
+        verify(patientRepository, never()).searchByText(anyString(), anyBoolean());
     }
 
     @Test
     void findAllReturnsActivePatientsWhenSearchIsBlank() {
         Patient patient = patient();
 
-        when(patientRepository.findAllByArchivedFalseOrderByCreatedAtDesc())
+        when(patientRepository.findAllByArchiveFilter(false))
                 .thenReturn(List.of(patient));
 
         List<PatientResponseDTO> patients = patientService.findAll("   ", false);
@@ -69,17 +70,15 @@ class PatientServiceTest {
         assertEquals(1, patients.size());
         assertPatientResponse(patients.getFirst());
 
-        verify(patientRepository).findAllByArchivedFalseOrderByCreatedAtDesc();
-        verify(patientRepository, never()).findAllByOrderByCreatedAtDesc();
-        verify(patientRepository, never()).searchByText(anyString());
-        verify(patientRepository, never()).searchActiveByText(anyString());
+        verify(patientRepository).findAllByArchiveFilter(false);
+        verify(patientRepository, never()).searchByText(anyString(), anyBoolean());
     }
 
     @Test
     void findAllSearchesActivePatientsWhenSearchHasText() {
         Patient patient = patient();
 
-        when(patientRepository.searchActiveByText("john"))
+        when(patientRepository.searchByText("john", false))
                 .thenReturn(List.of(patient));
 
         List<PatientResponseDTO> patients = patientService.findAll("  john  ", false);
@@ -87,17 +86,15 @@ class PatientServiceTest {
         assertEquals(1, patients.size());
         assertPatientResponse(patients.getFirst());
 
-        verify(patientRepository).searchActiveByText("john");
-        verify(patientRepository, never()).searchByText(anyString());
-        verify(patientRepository, never()).findAllByOrderByCreatedAtDesc();
-        verify(patientRepository, never()).findAllByArchivedFalseOrderByCreatedAtDesc();
+        verify(patientRepository).searchByText("john", false);
+        verify(patientRepository, never()).findAllByArchiveFilter(anyBoolean());
     }
 
     @Test
     void findAllReturnsAllPatientsWhenIncludeArchivedIsTrueAndSearchIsNull() {
         Patient patient = patient();
 
-        when(patientRepository.findAllByOrderByCreatedAtDesc())
+        when(patientRepository.findAllByArchiveFilter(true))
                 .thenReturn(List.of(patient));
 
         List<PatientResponseDTO> patients = patientService.findAll(null, true);
@@ -105,17 +102,15 @@ class PatientServiceTest {
         assertEquals(1, patients.size());
         assertPatientResponse(patients.getFirst());
 
-        verify(patientRepository).findAllByOrderByCreatedAtDesc();
-        verify(patientRepository, never()).findAllByArchivedFalseOrderByCreatedAtDesc();
-        verify(patientRepository, never()).searchByText(anyString());
-        verify(patientRepository, never()).searchActiveByText(anyString());
+        verify(patientRepository).findAllByArchiveFilter(true);
+        verify(patientRepository, never()).searchByText(anyString(), anyBoolean());
     }
 
     @Test
     void findAllSearchesAllPatientsWhenIncludeArchivedIsTrue() {
         Patient patient = patient();
 
-        when(patientRepository.searchByText("john"))
+        when(patientRepository.searchByText("john", true))
                 .thenReturn(List.of(patient));
 
         List<PatientResponseDTO> patients = patientService.findAll("  john  ", true);
@@ -123,10 +118,8 @@ class PatientServiceTest {
         assertEquals(1, patients.size());
         assertPatientResponse(patients.getFirst());
 
-        verify(patientRepository).searchByText("john");
-        verify(patientRepository, never()).searchActiveByText(anyString());
-        verify(patientRepository, never()).findAllByOrderByCreatedAtDesc();
-        verify(patientRepository, never()).findAllByArchivedFalseOrderByCreatedAtDesc();
+        verify(patientRepository).searchByText("john", true);
+        verify(patientRepository, never()).findAllByArchiveFilter(anyBoolean());
     }
 
     @Test
@@ -265,29 +258,6 @@ class PatientServiceTest {
         assertEquals("Patient not found with id: " + patientId, exception.getMessage());
 
         verify(patientRepository).findById(patientId);
-    }
-
-    private static Patient patient() {
-        return patient(
-                "John",
-                "Doe",
-                LocalDate.parse("1990-01-15"),
-                "MRN-001"
-        );
-    }
-
-    private static Patient patient(
-            String firstName,
-            String lastName,
-            LocalDate dateOfBirth,
-            String medicalRecordNumber
-    ) {
-        return Patient.create(
-                firstName,
-                lastName,
-                dateOfBirth,
-                medicalRecordNumber
-        );
     }
 
     private static void assertPatientResponse(PatientResponseDTO patient) {

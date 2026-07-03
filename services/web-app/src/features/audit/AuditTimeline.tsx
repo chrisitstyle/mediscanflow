@@ -320,10 +320,6 @@ function formatRole(role: string) {
   return role.toLowerCase().replaceAll("_", " ");
 }
 
-function formatEventType(type: AuditEventType) {
-  return type.toLowerCase().replaceAll("_", " ");
-}
-
 function AuditTimelineSkeleton() {
   return (
     <div className="space-y-4">

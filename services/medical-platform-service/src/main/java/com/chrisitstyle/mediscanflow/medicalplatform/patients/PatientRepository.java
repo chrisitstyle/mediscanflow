@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,26 +15,32 @@ public interface PatientRepository extends JpaRepository<Patient, UUID> {
 
     boolean existsByMedicalRecordNumber(String medicalRecordNumber);
 
-    List<Patient> findAllByOrderByCreatedAtDesc();
-    List<Patient> findAllByArchivedFalseOrderByCreatedAtDesc();
     @Query("""
         select p from Patient p
-        where p.firstName like concat('%', :search, '%')
-           or p.lastName like concat('%', :search, '%')
-           or p.medicalRecordNumber like concat('%', :search, '%')
+        where :includeArchived = true or p.archived = false
         order by p.createdAt desc
         """)
-    List<Patient> searchByText(@Param("search") String search);
+    List<Patient> findAllByArchiveFilter(@Param("includeArchived") boolean includeArchived);
+
+    default List<Patient> searchByText(String search, boolean includeArchived) {
+        return searchByPattern(
+                "%" + search.toLowerCase(Locale.ROOT) + "%",
+                includeArchived
+        );
+    }
 
     @Query("""
         select p from Patient p
-        where p.archived = false
+        where (:includeArchived = true or p.archived = false)
           and (
-            p.firstName like concat('%', :search, '%')
-            or p.lastName like concat('%', :search, '%')
-            or p.medicalRecordNumber like concat('%', :search, '%')
+            lower(p.firstName) like :searchPattern
+            or lower(p.lastName) like :searchPattern
+            or lower(p.medicalRecordNumber) like :searchPattern
           )
         order by p.createdAt desc
         """)
-    List<Patient> searchActiveByText(@Param("search") String search);
+    List<Patient> searchByPattern(
+            @Param("searchPattern") String searchPattern,
+            @Param("includeArchived") boolean includeArchived
+    );
 }

@@ -140,7 +140,7 @@ public class GlobalExceptionHandler {
             MaxUploadSizeExceededException exception,
             HttpServletRequest request
     ) {
-        HttpStatus status = HttpStatus.PAYLOAD_TOO_LARGE;
+        HttpStatus status = HttpStatus.CONTENT_TOO_LARGE;
 
         return ResponseEntity.status(status)
                 .body(ApiErrorResponseDTO.of(

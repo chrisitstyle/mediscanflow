@@ -45,8 +45,13 @@ class AnalysisServiceTest {
     private static final UUID PATIENT_ID =
             UUID.fromString("9efdb5f0-733e-4f59-8a78-6240e43237c7");
 
+    private static final String ORIGINAL_FILE_NAME = "brain-scan.jpg";
     private static final String OBJECT_KEY =
             "analyses/4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24/brain-scan.jpg";
+    private static final String CONTENT_TYPE = "image/jpeg";
+    private static final long FILE_SIZE_BYTES = 30310L;
+    private static final String MODEL_NAME = "yolo-brain-tumor-detector";
+    private static final String MODEL_VERSION = "yolov8n";
 
     private AnalysisRepository analysisRepository;
     private FileStorageService fileStorageService;
@@ -97,10 +102,10 @@ class AnalysisServiceTest {
         assertEquals(PATIENT_ID, analysis.patientId());
         assertEquals("John Doe", analysis.patientFullName());
         assertEquals(AnalysisStatus.COMPLETED, analysis.status());
-        assertEquals("brain-scan.jpg", analysis.originalFileName());
-        assertEquals("yolo-brain-tumor-detector", analysis.modelName());
-        assertEquals("yolov8n", analysis.modelVersion());
-        assertEquals(30310L, analysis.fileSizeBytes());
+        assertEquals(ORIGINAL_FILE_NAME, analysis.originalFileName());
+        assertEquals(MODEL_NAME, analysis.modelName());
+        assertEquals(MODEL_VERSION, analysis.modelVersion());
+        assertEquals(FILE_SIZE_BYTES, analysis.fileSizeBytes());
         assertEquals(Instant.parse("2026-07-01T10:00:00Z"), analysis.createdAt());
         assertEquals(Instant.parse("2026-07-01T10:00:08Z"), analysis.completedAt());
 
@@ -241,10 +246,10 @@ class AnalysisServiceTest {
                 PATIENT_ID,
                 "John Doe",
                 AnalysisStatus.COMPLETED,
-                "brain-scan.jpg",
-                "yolo-brain-tumor-detector",
-                "yolov8n",
-                30310L,
+                ORIGINAL_FILE_NAME,
+                MODEL_NAME,
+                MODEL_VERSION,
+                FILE_SIZE_BYTES,
                 Instant.parse("2026-07-01T10:00:00Z"),
                 Instant.parse("2026-07-01T10:00:08Z")
         );
@@ -254,8 +259,8 @@ class AnalysisServiceTest {
         Analysis analysis = queuedAnalysis();
 
         analysis.fail(
-                "yolo-brain-tumor-detector",
-                "yolov8n",
+                MODEL_NAME,
+                MODEL_VERSION,
                 "Simulated inference failure"
         );
 
@@ -267,15 +272,19 @@ class AnalysisServiceTest {
 
         when(patient.getId()).thenReturn(PATIENT_ID);
 
+        AnalysisInput analysisInput = new AnalysisInput(
+                ORIGINAL_FILE_NAME,
+                OBJECT_KEY,
+                CONTENT_TYPE,
+                FILE_SIZE_BYTES,
+                MODEL_NAME,
+                MODEL_VERSION
+        );
+
         return Analysis.queued(
                 ANALYSIS_ID,
                 patient,
-                "brain-scan.jpg",
-                OBJECT_KEY,
-                "image/jpeg",
-                30310L,
-                "yolo-brain-tumor-detector",
-                "yolov8n"
+                analysisInput
         );
     }
 }

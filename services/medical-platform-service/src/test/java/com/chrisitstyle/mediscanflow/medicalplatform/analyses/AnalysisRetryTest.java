@@ -13,15 +13,21 @@ class AnalysisRetryTest {
 
     @Test
     void retryMovesFailedAnalysisBackToQueuedAndClearsFailureState() {
-        Analysis analysis = Analysis.queued(
-                UUID.fromString("4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24"),
-                mock(Patient.class),
+        UUID analysisId = UUID.fromString("4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24");
+
+        AnalysisInput analysisInput = new AnalysisInput(
                 "brain-scan.jpg",
                 "analyses/4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24/brain-scan.jpg",
                 "image/jpeg",
                 30310L,
                 "yolo-brain-tumor-detector",
                 "yolov8n"
+        );
+
+        Analysis analysis = Analysis.queued(
+                analysisId,
+                mock(Patient.class),
+                analysisInput
         );
 
         analysis.fail(
