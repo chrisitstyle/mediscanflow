@@ -38,6 +38,22 @@
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:3000/*"
       }
+    },
+    {
+      "clientId": "mediscanflow-admin-api",
+      "name": "MediScanFlow Admin API",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "clientAuthenticatorType": "client-secret",
+      "secret": "KAZ3XeVbTLVxds0ZojKNZ8Re6Pc5tyaL",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "redirectUris": [],
+      "webOrigins": []
     }
   ],
   "users": [
@@ -88,6 +104,19 @@
         }
       ],
       "realmRoles": ["STAFF"]
+    },
+    {
+      "username": "service-account-mediscanflow-admin-api",
+      "enabled": true,
+      "serviceAccountClientId": "mediscanflow-admin-api",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users",
+          "view-realm"
+        ]
+      }
     }
   ]
 }

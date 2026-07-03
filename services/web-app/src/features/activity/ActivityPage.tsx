@@ -9,11 +9,12 @@ import {
   RefreshCcw,
   RotateCcw,
   UploadCloud,
+  UserCog,
   UserPlus,
   UserRoundPen,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { getAuditEventsPage } from "@/api/auditApi";
 import { EmptyState } from "@/components/EmptyState";
@@ -42,6 +43,7 @@ const AUDIT_EVENT_LABELS: Record<AuditEventType, string> = {
   ANALYSIS_UPLOADED: "Analysis uploaded",
   ANALYSIS_RETRIED: "Analysis retried",
   REPORT_DOWNLOADED: "Report downloaded",
+  USER_CREATED: "User created",
 };
 
 function resolvePage(value: string | null) {
@@ -250,6 +252,8 @@ function AuditEventIcon({ type }: AuditEventIconProps) {
       return <RefreshCcw className={className} />;
     case "REPORT_DOWNLOADED":
       return <Download className={className} />;
+    case "USER_CREATED":
+      return <UserCog className={className} />;
   }
 }
 

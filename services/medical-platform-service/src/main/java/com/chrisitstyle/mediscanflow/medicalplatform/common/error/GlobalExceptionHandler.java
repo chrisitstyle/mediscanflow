@@ -167,6 +167,22 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(UserManagementException.class)
+    ResponseEntity<ApiErrorResponseDTO> handleUserManagementException(
+            UserManagementException exception,
+            HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        return ResponseEntity.status(status)
+                .body(ApiErrorResponseDTO.of(
+                        status.value(),
+                        status.getReasonPhrase(),
+                        exception.getMessage(),
+                        request.getRequestURI()
+                ));
+    }
+
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiErrorResponseDTO> handleGenericException(
             Exception exception,
@@ -228,4 +244,6 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
     }
+
+
 }

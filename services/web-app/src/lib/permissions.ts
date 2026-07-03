@@ -1,5 +1,9 @@
 import type { CurrentUser, UserRole } from "@/types/auth";
 
+export function canManageUsers(user: CurrentUser | null | undefined) {
+  return user?.roles.includes("ADMIN") ?? false;
+}
+
 export function hasRole(user: CurrentUser | undefined, role: UserRole) {
   return user?.roles.includes(role) ?? false;
 }

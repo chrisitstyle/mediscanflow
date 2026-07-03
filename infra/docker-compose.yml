@@ -99,6 +99,12 @@ services:
 
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8081/realms/mediscanflow
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/mediscanflow/protocol/openid-connect/certs
+
+      KEYCLOAK_ADMIN_SERVER_URL: http://keycloak:8080
+      KEYCLOAK_ADMIN_REALM: mediscanflow
+      KEYCLOAK_ADMIN_CLIENT_ID: mediscanflow-admin-api
+      KEYCLOAK_ADMIN_CLIENT_SECRET: KAZ3XeVbTLVxds0ZojKNZ8Re6Pc5tyaL
+
     ports:
       - "8080:8080"
     depends_on:

@@ -96,6 +96,9 @@ public class SecurityConfig {
                             .requestMatchers(HttpMethod.GET, "/audit-events/recent")
                             .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
 
+                            .requestMatchers(HttpMethod.POST, "/admin/users")
+                            .hasRole(role(ADMIN))
+
                             .anyRequest()
                             .authenticated()
                     )

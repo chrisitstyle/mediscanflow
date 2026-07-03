@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Users } from "lucide-react";
+import { Plus, UserPlus, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,13 +12,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { canWriteMedicalData } from "@/lib/permissions";
+import { canManageUsers, canWriteMedicalData } from "@/lib/permissions";
 
 export function QuickActionsCard() {
   const currentUserQuery = useCurrentUser();
   const currentUser = currentUserQuery.data;
 
   const canWrite = canWriteMedicalData(currentUser);
+  const canManage = canManageUsers(currentUser);
 
   return (
     <Card>
@@ -41,7 +42,16 @@ export function QuickActionsCard() {
           </Button>
         )}
 
-        <Button asChild variant={canWrite ? "outline" : "default"}>
+        {canManage && (
+          <Button asChild variant="outline">
+            <Link href="/admin/users/new">
+              <UserPlus className="size-4" />
+              Create user
+            </Link>
+          </Button>
+        )}
+
+        <Button asChild variant={canWrite || canManage ? "outline" : "default"}>
           <Link href="/patients">
             <Users className="size-4" />
             Open patient registry
