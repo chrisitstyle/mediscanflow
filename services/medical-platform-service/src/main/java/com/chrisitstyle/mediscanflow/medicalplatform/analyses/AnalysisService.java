@@ -31,6 +31,7 @@ import java.util.UUID;
 public class AnalysisService {
 
     private static final String ANALYSIS_NOT_FOUND_MSG = "Analysis not found";
+    private static final String ANALYSIS_NOT_FOUND_WITH_ID_MSG = "Analysis not found with id: ";
     private static final String PATIENT_NOT_FOUND_MSG = "Patient not found";
 
     private final AnalysisRepository analysisRepository;
@@ -52,51 +53,25 @@ public class AnalysisService {
     ) {
         fileUploadValidator.validateImageFile(file);
 
-        Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new ResourceNotFoundException(PATIENT_NOT_FOUND_MSG));
-
-        if (patient.isArchived()) {
-            throw new InvalidPatientStateException(
-                    "Cannot upload scans for archived patient."
-            );
-        }
+        Patient patient = findPatientOrThrow(patientId);
+        validatePatientCanUploadScans(patient);
 
         UUID analysisId = UUID.randomUUID();
+        String objectKey = createObjectKey(analysisId, file);
 
-        String objectKey = analysisObjectKeyFactory.create(
-                analysisId,
-                file.getOriginalFilename()
-        );
-
-        fileStorageService.upload(objectKey, file);
-        uploadedFileCleanupService.deleteOnRollback(objectKey);
+        uploadInputFile(objectKey, file);
 
         try {
-            AnalysisInput analysisInput = new AnalysisInput(
-                    file.getOriginalFilename(),
+            Analysis analysis = createQueuedAnalysis(
+                    analysisId,
+                    patient,
+                    file,
                     objectKey,
-                    file.getContentType(),
-                    file.getSize(),
                     modelName,
                     modelVersion
             );
 
-            Analysis analysis = Analysis.queued(
-                    analysisId,
-                    patient,
-                    analysisInput
-            );
-
-            Analysis savedAnalysis = analysisRepository.save(analysis);
-
-            auditEventService.recordEvent(
-                    AuditEventType.ANALYSIS_UPLOADED,
-                    savedAnalysis.getPatient().getId(),
-                    savedAnalysis.getId(),
-                    analysisUploadedMessage(savedAnalysis)
-            );
-
-            outboxEventService.saveAnalysisRequestedEvent(savedAnalysis);
+            Analysis savedAnalysis = saveAnalysisWithAuditAndOutbox(analysis);
 
             return analysisMapper.toResponseDTO(savedAnalysis);
         } catch (RuntimeException exception) {
@@ -107,8 +82,7 @@ public class AnalysisService {
 
     @Transactional(readOnly = true)
     public AnalysisResponseDTO findById(UUID id) {
-        Analysis analysis = analysisRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(ANALYSIS_NOT_FOUND_MSG));
+        Analysis analysis = findAnalysisOrThrow(id);
 
         return analysisMapper.toResponseDTO(analysis);
     }
@@ -142,26 +116,13 @@ public class AnalysisService {
 
     @Transactional
     public AnalysisResponseDTO retryAnalysis(UUID analysisId) {
-        Analysis analysis = analysisRepository.findById(analysisId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Analysis not found with id: " + analysisId
-                ));
+        Analysis analysis = findAnalysisForRetryOrThrow(analysisId);
 
-        if (analysis.getStatus() != AnalysisStatus.FAILED) {
-            throw new InvalidAnalysisStateException(
-                    "Only failed analyses can be retried."
-            );
-        }
+        validateAnalysisCanBeRetried(analysis);
 
         analysis.retry();
 
-        auditEventService.recordEvent(
-                AuditEventType.ANALYSIS_RETRIED,
-                analysis.getPatient().getId(),
-                analysis.getId(),
-                analysisRetriedMessage(analysis)
-        );
-
+        recordAnalysisRetriedAudit(analysis);
         outboxEventService.saveAnalysisRequestedEvent(analysis);
 
         return analysisMapper.toResponseDTO(analysis);
@@ -175,8 +136,7 @@ public class AnalysisService {
             String resultObjectKey,
             List<AnalysisDetectionPayload> detections
     ) {
-        Analysis analysis = analysisRepository.findById(analysisId)
-                .orElseThrow(() -> new ResourceNotFoundException(ANALYSIS_NOT_FOUND_MSG));
+        Analysis analysis = findAnalysisOrThrow(analysisId);
 
         analysis.complete(modelName, modelVersion, resultObjectKey, detections);
     }
@@ -188,10 +148,119 @@ public class AnalysisService {
             String modelVersion,
             String errorMessage
     ) {
-        Analysis analysis = analysisRepository.findById(analysisId)
-                .orElseThrow(() -> new ResourceNotFoundException(ANALYSIS_NOT_FOUND_MSG));
+        Analysis analysis = findAnalysisOrThrow(analysisId);
 
         analysis.fail(modelName, modelVersion, errorMessage);
+    }
+
+    private Patient findPatientOrThrow(UUID patientId) {
+        return patientRepository.findById(patientId)
+                .orElseThrow(() -> new ResourceNotFoundException(PATIENT_NOT_FOUND_MSG));
+    }
+
+    private void validatePatientCanUploadScans(Patient patient) {
+        if (patient.isArchived()) {
+            throw new InvalidPatientStateException(
+                    "Cannot upload scans for archived patient."
+            );
+        }
+    }
+
+    private String createObjectKey(UUID analysisId, MultipartFile file) {
+        return analysisObjectKeyFactory.create(
+                analysisId,
+                file.getOriginalFilename()
+        );
+    }
+
+    private void uploadInputFile(String objectKey, MultipartFile file) {
+        fileStorageService.upload(objectKey, file);
+        uploadedFileCleanupService.deleteOnRollback(objectKey);
+    }
+
+    private Analysis createQueuedAnalysis(
+            UUID analysisId,
+            Patient patient,
+            MultipartFile file,
+            String objectKey,
+            String modelName,
+            String modelVersion
+    ) {
+        AnalysisInput analysisInput = createAnalysisInput(
+                file,
+                objectKey,
+                modelName,
+                modelVersion
+        );
+
+        return Analysis.queued(
+                analysisId,
+                patient,
+                analysisInput
+        );
+    }
+
+    private AnalysisInput createAnalysisInput(
+            MultipartFile file,
+            String objectKey,
+            String modelName,
+            String modelVersion
+    ) {
+        return new AnalysisInput(
+                file.getOriginalFilename(),
+                objectKey,
+                file.getContentType(),
+                file.getSize(),
+                modelName,
+                modelVersion
+        );
+    }
+
+    private Analysis saveAnalysisWithAuditAndOutbox(Analysis analysis) {
+        Analysis savedAnalysis = analysisRepository.save(analysis);
+
+        recordAnalysisUploadedAudit(savedAnalysis);
+        outboxEventService.saveAnalysisRequestedEvent(savedAnalysis);
+
+        return savedAnalysis;
+    }
+
+    private Analysis findAnalysisOrThrow(UUID analysisId) {
+        return analysisRepository.findById(analysisId)
+                .orElseThrow(() -> new ResourceNotFoundException(ANALYSIS_NOT_FOUND_MSG));
+    }
+
+    private Analysis findAnalysisForRetryOrThrow(UUID analysisId) {
+        return analysisRepository.findById(analysisId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ANALYSIS_NOT_FOUND_WITH_ID_MSG + analysisId
+                ));
+    }
+
+    private void validateAnalysisCanBeRetried(Analysis analysis) {
+        if (analysis.getStatus() != AnalysisStatus.FAILED) {
+            throw new InvalidAnalysisStateException(
+                    "Only failed analyses can be retried."
+            );
+        }
+    }
+
+    private void recordAnalysisUploadedAudit(Analysis analysis) {
+        auditEventService.recordEvent(
+                AuditEventType.ANALYSIS_UPLOADED,
+                analysis.getPatient().getId(),
+                analysis.getId(),
+                analysisUploadedMessage(analysis)
+        );
+    }
+
+    private void recordAnalysisRetriedAudit(Analysis analysis) {
+        auditEventService.recordEvent(
+                AuditEventType.ANALYSIS_RETRIED,
+                analysis.getPatient().getId(),
+                analysis.getId(),
+                analysisRetriedMessage(analysis)
+        );
     }
 
     private String analysisUploadedMessage(Analysis analysis) {
