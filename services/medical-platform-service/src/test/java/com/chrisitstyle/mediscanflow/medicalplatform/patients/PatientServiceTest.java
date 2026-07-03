@@ -6,9 +6,14 @@ import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientProfile
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.dto.PatientResponseDTO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 import java.time.Month;
@@ -24,14 +29,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PatientServiceTest {
+
+    private static final Sort CREATED_AT_DESC_SORT =
+            Sort.by(Sort.Direction.DESC, "createdAt");
 
     @Mock
     private PatientRepository patientRepository;
@@ -42,84 +48,54 @@ class PatientServiceTest {
     @InjectMocks
     private PatientService patientService;
 
-    @Test
-    void findAllReturnsActivePatientsWhenSearchIsNull() {
+    @ParameterizedTest
+    @CsvSource(
+            value = {
+                    "NULL, false",
+                    "'   ', false",
+                    "'  john  ', false",
+                    "NULL, true",
+                    "'  john  ', true"
+            },
+            nullValues = "NULL"
+    )
+    void findAllReturnsPatientsForSearchAndArchiveFilters(
+            String search,
+            boolean includeArchived
+    ) {
         Patient patient = patient();
 
-        when(patientRepository.findAllByArchiveFilter(false))
-                .thenReturn(List.of(patient));
+        when(patientRepository.findAll(
+                ArgumentMatchers.<Specification<Patient>>any(),
+                any(Sort.class)
+        )).thenReturn(List.of(patient));
 
-        List<PatientResponseDTO> patients = patientService.findAll(null, false);
+        List<PatientResponseDTO> patients = patientService.findAll(search, includeArchived);
 
         assertEquals(1, patients.size());
         assertPatientResponse(patients.getFirst());
 
-        verify(patientRepository).findAllByArchiveFilter(false);
-        verify(patientRepository, never()).searchByText(anyString(), anyBoolean());
+        verify(patientRepository).findAll(
+                ArgumentMatchers.<Specification<Patient>>any(),
+                any(Sort.class)
+        );
     }
 
     @Test
-    void findAllReturnsActivePatientsWhenSearchIsBlank() {
+    void findAllUsesCreatedAtDescendingSort() {
         Patient patient = patient();
 
-        when(patientRepository.findAllByArchiveFilter(false))
-                .thenReturn(List.of(patient));
+        when(patientRepository.findAll(
+                ArgumentMatchers.<Specification<Patient>>any(),
+                any(Sort.class)
+        )).thenReturn(List.of(patient));
 
-        List<PatientResponseDTO> patients = patientService.findAll("   ", false);
+        patientService.findAll("john", false);
 
-        assertEquals(1, patients.size());
-        assertPatientResponse(patients.getFirst());
-
-        verify(patientRepository).findAllByArchiveFilter(false);
-        verify(patientRepository, never()).searchByText(anyString(), anyBoolean());
-    }
-
-    @Test
-    void findAllSearchesActivePatientsWhenSearchHasText() {
-        Patient patient = patient();
-
-        when(patientRepository.searchByText("john", false))
-                .thenReturn(List.of(patient));
-
-        List<PatientResponseDTO> patients = patientService.findAll("  john  ", false);
-
-        assertEquals(1, patients.size());
-        assertPatientResponse(patients.getFirst());
-
-        verify(patientRepository).searchByText("john", false);
-        verify(patientRepository, never()).findAllByArchiveFilter(anyBoolean());
-    }
-
-    @Test
-    void findAllReturnsAllPatientsWhenIncludeArchivedIsTrueAndSearchIsNull() {
-        Patient patient = patient();
-
-        when(patientRepository.findAllByArchiveFilter(true))
-                .thenReturn(List.of(patient));
-
-        List<PatientResponseDTO> patients = patientService.findAll(null, true);
-
-        assertEquals(1, patients.size());
-        assertPatientResponse(patients.getFirst());
-
-        verify(patientRepository).findAllByArchiveFilter(true);
-        verify(patientRepository, never()).searchByText(anyString(), anyBoolean());
-    }
-
-    @Test
-    void findAllSearchesAllPatientsWhenIncludeArchivedIsTrue() {
-        Patient patient = patient();
-
-        when(patientRepository.searchByText("john", true))
-                .thenReturn(List.of(patient));
-
-        List<PatientResponseDTO> patients = patientService.findAll("  john  ", true);
-
-        assertEquals(1, patients.size());
-        assertPatientResponse(patients.getFirst());
-
-        verify(patientRepository).searchByText("john", true);
-        verify(patientRepository, never()).findAllByArchiveFilter(anyBoolean());
+        verify(patientRepository).findAll(
+                ArgumentMatchers.<Specification<Patient>>any(),
+                ArgumentMatchers.eq(CREATED_AT_DESC_SORT)
+        );
     }
 
     @Test
