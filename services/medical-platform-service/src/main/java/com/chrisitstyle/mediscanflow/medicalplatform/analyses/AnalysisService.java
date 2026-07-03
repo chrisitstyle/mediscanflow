@@ -10,9 +10,8 @@ import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.InvalidAna
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.InvalidPatientStateException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.validation.FileUploadValidator;
-import com.chrisitstyle.mediscanflow.medicalplatform.messaging.AnalysisEventPublisher;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisDetectionPayload;
-import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisRequestedEvent;
+import com.chrisitstyle.mediscanflow.medicalplatform.messaging.outbox.OutboxEventService;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.Patient;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.PatientRepository;
 import com.chrisitstyle.mediscanflow.medicalplatform.storage.FileStorageService;
@@ -21,8 +20,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -39,10 +36,10 @@ public class AnalysisService {
     private final PatientRepository patientRepository;
     private final FileStorageService fileStorageService;
     private final FileUploadValidator fileUploadValidator;
-    private final AnalysisEventPublisher analysisEventPublisher;
     private final AuditEventService auditEventService;
     private final AnalysisMapper analysisMapper;
     private final AnalysisObjectKeyFactory analysisObjectKeyFactory;
+    private final OutboxEventService outboxEventService;
 
     @Transactional
     public AnalysisResponseDTO create(
@@ -63,7 +60,9 @@ public class AnalysisService {
         }
 
         UUID analysisId = UUID.randomUUID();
-        String objectKey = analysisObjectKeyFactory.create(analysisId,
+
+        String objectKey = analysisObjectKeyFactory.create(
+                analysisId,
                 file.getOriginalFilename()
         );
 
@@ -93,7 +92,7 @@ public class AnalysisService {
                 "Scan " + savedAnalysis.getOriginalFileName() + " was uploaded for analysis."
         );
 
-        publishAnalysisRequestedAfterCommit(savedAnalysis);
+        outboxEventService.saveAnalysisRequestedEvent(savedAnalysis);
 
         return analysisMapper.toResponseDTO(savedAnalysis);
     }
@@ -155,7 +154,7 @@ public class AnalysisService {
                 "Analysis " + analysis.getId() + " was retried."
         );
 
-        publishAnalysisRequestedAfterCommit(analysis);
+        outboxEventService.saveAnalysisRequestedEvent(analysis);
 
         return analysisMapper.toResponseDTO(analysis);
     }
@@ -185,22 +184,5 @@ public class AnalysisService {
                 .orElseThrow(() -> new ResourceNotFoundException(ANALYSIS_NOT_FOUND_MSG));
 
         analysis.fail(modelName, modelVersion, errorMessage);
-    }
-
-    private void publishAnalysisRequestedAfterCommit(Analysis analysis) {
-        AnalysisRequestedEvent event = AnalysisRequestedEvent.create(
-                analysis.getId(),
-                analysis.getPatient().getId(),
-                analysis.getObjectKey(),
-                analysis.getModelName(),
-                analysis.getModelVersion()
-        );
-
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                analysisEventPublisher.publishAnalysisRequested(event);
-            }
-        });
     }
 }
