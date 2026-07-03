@@ -17,6 +17,7 @@ export const queryKeys = {
 
   audit: {
     recent: (limit = 20) => ["audit", "recent", limit] as const,
+    page: (page = 0, size = 50) => ["audit", "page", page, size] as const,
     patient: (patientId: string, limit = 20) =>
       ["audit", "patient", patientId, limit] as const,
     analysis: (analysisId: string, limit = 20) =>

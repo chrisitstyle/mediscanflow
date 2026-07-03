@@ -1,5 +1,10 @@
 import { apiFetch } from "@/lib/apiClient";
-import type { AuditEvent, GetAuditEventsInput } from "@/types/audit";
+import type {
+  AuditEvent,
+  AuditEventPage,
+  GetAuditEventsInput,
+  GetAuditEventsPageInput,
+} from "@/types/audit";
 
 function buildAuditLimitQuery(input: GetAuditEventsInput = {}): string {
   const searchParams = new URLSearchParams();
@@ -37,4 +42,15 @@ export async function getAnalysisAuditEvents(
   return apiFetch<AuditEvent[]>(
     `/analyses/${analysisId}/audit-events${buildAuditLimitQuery(input)}`,
   );
+}
+
+export async function getAuditEventsPage(
+  input: GetAuditEventsPageInput = {},
+): Promise<AuditEventPage> {
+  const searchParams = new URLSearchParams();
+
+  searchParams.set("page", String(input.page ?? 0));
+  searchParams.set("size", String(input.size ?? 50));
+
+  return apiFetch<AuditEventPage>(`/audit-events?${searchParams.toString()}`);
 }

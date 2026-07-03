@@ -23,3 +23,18 @@ export type AuditEvent = {
 export type GetAuditEventsInput = {
   limit?: number;
 };
+
+export type AuditEventPage = {
+  content: AuditEvent[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+};
+
+export type GetAuditEventsPageInput = {
+  page?: number;
+  size?: number;
+};
