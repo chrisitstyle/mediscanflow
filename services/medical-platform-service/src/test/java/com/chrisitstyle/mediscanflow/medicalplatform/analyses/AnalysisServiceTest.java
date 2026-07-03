@@ -56,6 +56,7 @@ class AnalysisServiceTest {
     private AnalysisService analysisService;
     private AuditEventService auditEventService;
     private AnalysisMapper analysisMapper;
+    private AnalysisObjectKeyFactory analysisObjectKeyFactory;
 
     @BeforeEach
     void setUp() {
@@ -66,6 +67,7 @@ class AnalysisServiceTest {
         analysisEventPublisher = mock(AnalysisEventPublisher.class);
         auditEventService = mock(AuditEventService.class);
         analysisMapper = mock(AnalysisMapper.class);
+        analysisObjectKeyFactory = mock(AnalysisObjectKeyFactory.class);
 
         analysisService = new AnalysisService(
                 analysisRepository,
@@ -74,7 +76,8 @@ class AnalysisServiceTest {
                 fileUploadValidator,
                 analysisEventPublisher,
                 auditEventService,
-                analysisMapper
+                analysisMapper,
+                analysisObjectKeyFactory
         );
 
         TransactionSynchronizationManager.initSynchronization();
