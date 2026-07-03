@@ -71,6 +71,7 @@ const AUDIT_EVENT_LABELS: Record<AuditEventType, string> = {
   ANALYSIS_UPLOADED: "Analysis uploaded",
   ANALYSIS_RETRIED: "Analysis retried",
   REPORT_DOWNLOADED: "Report downloaded",
+  USER_CREATED: "User created",
 };
 
 export function AuditTimeline(props: AuditTimelineProps) {
