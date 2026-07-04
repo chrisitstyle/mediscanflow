@@ -16,6 +16,12 @@ COPY requirements-lock.txt .
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements-lock.txt
 
-COPY app ./app
+RUN useradd --create-home appuser \
+    && mkdir -p /tmp/ultralytics \
+    && chown -R appuser:appuser /app /tmp/ultralytics
+
+COPY --chown=appuser:appuser app ./app
+
+USER appuser
 
 CMD ["python", "app/main.py"]
