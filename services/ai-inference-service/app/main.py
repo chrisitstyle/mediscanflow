@@ -1,4 +1,5 @@
 import json
+import logging
 
 from config import (
     get_minio_settings,
@@ -17,6 +18,15 @@ from messaging import (
 from processor import AnalysisProcessor
 from storage import create_minio_client
 
+logger = logging.getLogger(__name__)
+
+
+def configure_logging() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    )
+
 
 def handle_message(
         channel,
@@ -28,7 +38,6 @@ def handle_message(
         requested_event = json.loads(body.decode("utf-8"))
 
         processing_status, event = processor.process(requested_event)
-
         routing_key = routing_key_for(processing_status)
 
         publish_event(
@@ -37,15 +46,19 @@ def handle_message(
             event=event,
         )
 
-        print(
-            f"Published {event['eventType']} event for "
-            f"analysisId={event['payload']['analysisId']}"
+        logger.info(
+            "Published %s event for analysisId=%s",
+            event["eventType"],
+            event["payload"]["analysisId"],
         )
 
         channel.basic_ack(delivery_tag=method.delivery_tag)
 
     except json.JSONDecodeError as exception:
-        print(f"Invalid JSON message. Rejecting without requeue. error={exception}")
+        logger.warning(
+            "Invalid JSON message. Rejecting without requeue. error=%s",
+            exception,
+        )
 
         channel.basic_nack(
             delivery_tag=method.delivery_tag,
@@ -53,7 +66,10 @@ def handle_message(
         )
 
     except Exception as exception:
-        print(f"Failed to handle message. Requeuing. error={exception}")
+        logger.exception(
+            "Failed to handle message. Requeuing. error=%s",
+            exception,
+        )
 
         channel.basic_nack(
             delivery_tag=method.delivery_tag,
@@ -72,6 +88,8 @@ def routing_key_for(processing_status: str) -> str:
 
 
 def main() -> None:
+    configure_logging()
+
     rabbitmq_settings = get_rabbitmq_settings()
     minio_settings = get_minio_settings()
     model_settings = get_model_settings()
@@ -103,8 +121,8 @@ def main() -> None:
         ),
     )
 
-    print("AI inference worker started.")
-    print("Waiting for AnalysisRequested events...")
+    logger.info("AI inference worker started.")
+    logger.info("Waiting for AnalysisRequested events...")
 
     channel.start_consuming()
 
