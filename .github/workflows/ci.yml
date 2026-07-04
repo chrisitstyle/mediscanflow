@@ -87,7 +87,7 @@ jobs:
         run: pnpm build
 
   ai-inference:
-    name: AI inference basic check
+    name: AI inference test and check
     runs-on: ubuntu-latest
 
     defaults:
@@ -103,13 +103,18 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: services/ai-inference-service/requirements.txt
+          cache-dependency-path: services/ai-inference-service/requirements-lock.txt
 
       - name: Install Python dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-lock.txt
+
+      - name: Run AI inference tests
+        run: make test
 
       - name: Compile Python files
-        run: python -m compileall .
+        run: python -m compileall app tests
 
   docker-compose:
     name: Docker Compose config
