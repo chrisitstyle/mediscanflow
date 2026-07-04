@@ -2,3 +2,4 @@ pika
 minio
 ultralytics
 opencv-python-headless
+pytest
