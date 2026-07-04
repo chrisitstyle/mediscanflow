@@ -4,10 +4,8 @@ from config import (
     get_minio_settings,
     get_model_settings,
     get_rabbitmq_settings,
-    should_simulate_inference_failure,
 )
-from events import build_completed_event, build_failed_event
-from inference import load_yolo_model, run_yolo_inference
+from inference import load_yolo_model
 from messaging import (
     ANALYSIS_COMPLETED_ROUTING_KEY,
     ANALYSIS_FAILED_ROUTING_KEY,
@@ -16,115 +14,44 @@ from messaging import (
     create_rabbitmq_connection,
     publish_event,
 )
-from storage import (
-    create_minio_client,
-    delete_file_if_exists,
-    download_input_file,
-    upload_result_file,
-)
+from processor import AnalysisProcessor
+from storage import create_minio_client
 
 
 def handle_message(
-    channel,
-    method,
-    properties,
-    body,
-    minio_client,
-    minio_settings,
-    model,
-    model_settings,
+        channel,
+        method,
+        body,
+        processor: AnalysisProcessor,
 ) -> None:
     requested_event = json.loads(body.decode("utf-8"))
-    payload = requested_event["payload"]
 
-    analysis_id = payload["analysisId"]
-    object_key = payload["objectKey"]
+    processing_status, event = processor.process(requested_event)
 
-    input_file_path = None
-    result_file_path = None
+    routing_key = routing_key_for(processing_status)
 
-    print(f"Received AnalysisRequested event for analysisId={analysis_id}")
-    print(f"Downloading input file from MinIO: objectKey={object_key}")
+    publish_event(
+        channel=channel,
+        routing_key=routing_key,
+        event=event,
+    )
 
-    try:
-        if should_simulate_inference_failure():
-            raise RuntimeError("Simulated inference failure")
+    print(
+        f"Published {event['eventType']} event for "
+        f"analysisId={event['payload']['analysisId']}"
+    )
 
-        input_file_path = download_input_file(
-            minio_client=minio_client,
-            settings=minio_settings,
-            object_key=object_key,
-        )
+    channel.basic_ack(delivery_tag=method.delivery_tag)
 
-        print(f"Downloaded input file to: {input_file_path}")
-        print(f"Running YOLO inference for analysisId={analysis_id}")
 
-        detections, result_file_path = run_yolo_inference(
-            model=model,
-            image_path=input_file_path,
-            settings=model_settings,
-        )
+def routing_key_for(processing_status: str) -> str:
+    if processing_status == "completed":
+        return ANALYSIS_COMPLETED_ROUTING_KEY
 
-        result_object_key = f"analyses/{analysis_id}/result.jpg"
+    if processing_status == "failed":
+        return ANALYSIS_FAILED_ROUTING_KEY
 
-        upload_result_file(
-            minio_client=minio_client,
-            settings=minio_settings,
-            object_key=result_object_key,
-            file_path=result_file_path,
-        )
-
-        print(f"Uploaded result image to MinIO: objectKey={result_object_key}")
-
-        completed_event = build_completed_event(
-            requested_event=requested_event,
-            result_object_key=result_object_key,
-            detections=detections,
-        )
-
-        publish_event(
-            channel=channel,
-            routing_key=ANALYSIS_COMPLETED_ROUTING_KEY,
-            event=completed_event,
-        )
-
-        print(
-            f"Published AnalysisCompleted event for analysisId={analysis_id}. "
-            f"detections={len(detections)}"
-        )
-
-        channel.basic_ack(delivery_tag=method.delivery_tag)
-
-    except Exception as exception:
-        error_message = str(exception)
-
-        failed_event = build_failed_event(
-            requested_event=requested_event,
-            error_message=error_message,
-        )
-
-        publish_event(
-            channel=channel,
-            routing_key=ANALYSIS_FAILED_ROUTING_KEY,
-            event=failed_event,
-        )
-
-        print(
-            f"Published AnalysisFailed event for analysisId={analysis_id}: "
-            f"{error_message}"
-        )
-
-        channel.basic_ack(delivery_tag=method.delivery_tag)
-
-    finally:
-        delete_file_if_exists(input_file_path)
-        delete_file_if_exists(result_file_path)
-
-        if input_file_path:
-            print(f"Deleted temporary input file: {input_file_path}")
-
-        if result_file_path:
-            print(f"Deleted temporary result file: {result_file_path}")
+    raise ValueError(f"Unsupported processing status: {processing_status}")
 
 
 def main() -> None:
@@ -140,22 +67,28 @@ def main() -> None:
     minio_client = create_minio_client(minio_settings)
     model = load_yolo_model(model_settings)
 
+    processor = AnalysisProcessor(
+        minio_client=minio_client,
+        minio_settings=minio_settings,
+        model=model,
+        model_settings=model_settings,
+    )
+
     channel.basic_qos(prefetch_count=1)
+
     channel.basic_consume(
         queue=ANALYSIS_REQUESTED_QUEUE,
-        on_message_callback=lambda ch, method, properties, body: handle_message(
+        on_message_callback=lambda ch, method, _properties, body: handle_message(
             channel=ch,
             method=method,
-            properties=properties,
             body=body,
-            minio_client=minio_client,
-            minio_settings=minio_settings,
-            model=model,
-            model_settings=model_settings,
+            processor=processor,
         ),
     )
 
-    print("AI inference worker started. Waiting for AnalysisRequested events...")
+    print("AI inference worker started.")
+    print("Waiting for AnalysisRequested events...")
+
     channel.start_consuming()
 
 
