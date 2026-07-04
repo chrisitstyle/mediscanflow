@@ -1,8 +1,10 @@
+export type ApiValidationErrors = Record<string, string>;
+
 export type ApiError = {
-  timestamp: string;
+  timestamp?: string;
   status: number;
-  error: string;
-  message: string;
-  path: string;
-  validationErrors: Record<string, string>;
+  error?: string;
+  message?: string;
+  path?: string;
+  validationErrors?: ApiValidationErrors;
 };
