@@ -2,6 +2,7 @@ import logging
 
 from events import build_completed_event, build_failed_event
 from inference import run_yolo_inference
+from processing_status import ProcessingStatus
 from storage import delete_file_if_exists, download_input_file, upload_result_file
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ class AnalysisProcessor:
         self.model = model
         self.model_settings = model_settings
 
-    def process(self, requested_event: dict) -> tuple[str, dict]:
+    def process(self, requested_event: dict) -> tuple[ProcessingStatus, dict]:
         payload = requested_event["payload"]
         analysis_id = payload["analysisId"]
         object_key = payload["objectKey"]
@@ -75,7 +76,7 @@ class AnalysisProcessor:
                 len(detections),
             )
 
-            return "completed", build_completed_event(
+            return ProcessingStatus.COMPLETED, build_completed_event(
                 requested_event=requested_event,
                 result_object_key=result_object_key,
                 detections=detections,
@@ -90,7 +91,7 @@ class AnalysisProcessor:
                 error_message,
             )
 
-            return "failed", build_failed_event(
+            return ProcessingStatus.FAILED, build_failed_event(
                 requested_event=requested_event,
                 error_message=error_message,
             )

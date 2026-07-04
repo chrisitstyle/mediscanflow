@@ -15,6 +15,7 @@ from messaging import (
     create_rabbitmq_connection,
     publish_event,
 )
+from processing_status import ProcessingStatus
 from processor import AnalysisProcessor
 from storage import create_minio_client
 
@@ -77,11 +78,11 @@ def handle_message(
         )
 
 
-def routing_key_for(processing_status: str) -> str:
-    if processing_status == "completed":
+def routing_key_for(processing_status: ProcessingStatus) -> str:
+    if processing_status == ProcessingStatus.COMPLETED:
         return ANALYSIS_COMPLETED_ROUTING_KEY
 
-    if processing_status == "failed":
+    if processing_status == ProcessingStatus.FAILED:
         return ANALYSIS_FAILED_ROUTING_KEY
 
     raise ValueError(f"Unsupported processing status: {processing_status}")
