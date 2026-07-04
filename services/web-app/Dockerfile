@@ -53,9 +53,14 @@ ENV NEXT_PUBLIC_KEYCLOAK_URL=${NEXT_PUBLIC_KEYCLOAK_URL}
 ENV NEXT_PUBLIC_KEYCLOAK_REALM=${NEXT_PUBLIC_KEYCLOAK_REALM}
 ENV NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID}
 
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+RUN addgroup -S nextjs-group -g 1001 \
+    && adduser -S nextjs-user -u 1001 -G nextjs-group
+
+COPY --from=builder --chown=nextjs-user:nextjs-group /app/public ./public
+COPY --from=builder --chown=nextjs-user:nextjs-group /app/.next/standalone ./
+COPY --from=builder --chown=nextjs-user:nextjs-group /app/.next/static ./.next/static
+
+USER nextjs-user
 
 EXPOSE 3000
 
