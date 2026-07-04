@@ -24,24 +24,41 @@ def handle_message(
         body,
         processor: AnalysisProcessor,
 ) -> None:
-    requested_event = json.loads(body.decode("utf-8"))
+    try:
+        requested_event = json.loads(body.decode("utf-8"))
 
-    processing_status, event = processor.process(requested_event)
+        processing_status, event = processor.process(requested_event)
 
-    routing_key = routing_key_for(processing_status)
+        routing_key = routing_key_for(processing_status)
 
-    publish_event(
-        channel=channel,
-        routing_key=routing_key,
-        event=event,
-    )
+        publish_event(
+            channel=channel,
+            routing_key=routing_key,
+            event=event,
+        )
 
-    print(
-        f"Published {event['eventType']} event for "
-        f"analysisId={event['payload']['analysisId']}"
-    )
+        print(
+            f"Published {event['eventType']} event for "
+            f"analysisId={event['payload']['analysisId']}"
+        )
 
-    channel.basic_ack(delivery_tag=method.delivery_tag)
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+
+    except json.JSONDecodeError as exception:
+        print(f"Invalid JSON message. Rejecting without requeue. error={exception}")
+
+        channel.basic_nack(
+            delivery_tag=method.delivery_tag,
+            requeue=False,
+        )
+
+    except Exception as exception:
+        print(f"Failed to handle message. Requeuing. error={exception}")
+
+        channel.basic_nack(
+            delivery_tag=method.delivery_tag,
+            requeue=True,
+        )
 
 
 def routing_key_for(processing_status: str) -> str:
