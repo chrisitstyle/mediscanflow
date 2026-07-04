@@ -1,8 +1,13 @@
 import json
+import logging
 import time
 
 import pika
+from pika.exceptions import AMQPConnectionError
+
 from config import RabbitMQSettings
+
+logger = logging.getLogger(__name__)
 
 ANALYSIS_EXCHANGE = "mediscanflow.analysis"
 
@@ -17,7 +22,10 @@ ANALYSIS_FAILED_ROUTING_KEY = "analysis.failed"
 
 
 def create_rabbitmq_connection(settings: RabbitMQSettings):
-    credentials = pika.PlainCredentials(settings.username, settings.password)
+    credentials = pika.PlainCredentials(
+        settings.username,
+        settings.password,
+    )
 
     connection_parameters = pika.ConnectionParameters(
         host=settings.host,
@@ -32,21 +40,25 @@ def create_rabbitmq_connection(settings: RabbitMQSettings):
 
     for attempt in range(1, max_attempts + 1):
         try:
-            print(
-                f"Connecting to RabbitMQ at {settings.host}:{settings.port} "
-                f"(attempt {attempt}/{max_attempts})..."
+            logger.info(
+                "Connecting to RabbitMQ at %s:%s. attempt=%s/%s",
+                settings.host,
+                settings.port,
+                attempt,
+                max_attempts,
             )
 
             connection = pika.BlockingConnection(connection_parameters)
 
-            print("Connected to RabbitMQ.")
+            logger.info("Connected to RabbitMQ.")
 
             return connection
 
-        except pika.exceptions.AMQPConnectionError as exception:
-            print(
-                f"RabbitMQ is not ready yet: {exception}. "
-                f"Retrying in {delay_seconds} seconds..."
+        except AMQPConnectionError as exception:
+            logger.warning(
+                "RabbitMQ is not ready yet. error=%s. Retrying in %s seconds.",
+                exception,
+                delay_seconds,
             )
 
             time.sleep(delay_seconds)
@@ -65,6 +77,7 @@ def configure_rabbitmq(channel) -> None:
         queue=ANALYSIS_REQUESTED_QUEUE,
         durable=True,
     )
+
     channel.queue_bind(
         queue=ANALYSIS_REQUESTED_QUEUE,
         exchange=ANALYSIS_EXCHANGE,
@@ -75,6 +88,7 @@ def configure_rabbitmq(channel) -> None:
         queue=ANALYSIS_COMPLETED_QUEUE,
         durable=True,
     )
+
     channel.queue_bind(
         queue=ANALYSIS_COMPLETED_QUEUE,
         exchange=ANALYSIS_EXCHANGE,
@@ -85,15 +99,20 @@ def configure_rabbitmq(channel) -> None:
         queue=ANALYSIS_FAILED_QUEUE,
         durable=True,
     )
+
     channel.queue_bind(
         queue=ANALYSIS_FAILED_QUEUE,
         exchange=ANALYSIS_EXCHANGE,
         routing_key=ANALYSIS_FAILED_ROUTING_KEY,
     )
 
+    channel.confirm_delivery()
+
+    logger.info("RabbitMQ topology configured.")
+
 
 def publish_event(channel, routing_key: str, event: dict) -> None:
-    channel.basic_publish(
+    published = channel.basic_publish(
         exchange=ANALYSIS_EXCHANGE,
         routing_key=routing_key,
         body=json.dumps(event),
@@ -101,4 +120,10 @@ def publish_event(channel, routing_key: str, event: dict) -> None:
             content_type="application/json",
             delivery_mode=2,
         ),
+        mandatory=True,
     )
+
+    if published is False:
+        raise RuntimeError(
+            f"RabbitMQ did not confirm event publication. routingKey={routing_key}"
+        )
