@@ -26,33 +26,10 @@ import { ApiClientError } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authTokenStore";
 import { canWriteMedicalData } from "@/lib/permissions";
 import { queryKeys } from "@/lib/queryKeys";
-
+import { formatDateTime, formatFileSize } from "@/lib/formatters";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend";
 
 const POLLING_STATUSES = ["UPLOADED", "QUEUED", "PROCESSING"];
-
-function formatDateTime(value: string | null) {
-  if (!value) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) {
-    return `${bytes} B`;
-  }
-
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
-  }
-
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
 
 export function AnalysisDetailsPage() {
   const params = useParams<{ analysisId: string }>();

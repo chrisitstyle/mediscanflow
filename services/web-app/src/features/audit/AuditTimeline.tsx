@@ -32,6 +32,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError } from "@/lib/apiClient";
 import { queryKeys } from "@/lib/queryKeys";
+import { formatDateTime } from "@/lib/formatters";
 import type { AuditEvent, AuditEventType } from "@/types/audit";
 
 type AuditTimelineBaseProps = {
@@ -297,13 +298,6 @@ function getDefaultDescription(scope: AuditTimelineProps["scope"]) {
     case "recent":
       return "Latest user actions across the platform.";
   }
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
 }
 
 function formatActor(event: AuditEvent) {
