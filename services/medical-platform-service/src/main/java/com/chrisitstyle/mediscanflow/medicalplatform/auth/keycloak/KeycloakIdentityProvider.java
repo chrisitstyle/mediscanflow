@@ -1,5 +1,6 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.auth.keycloak;
 
+import com.chrisitstyle.mediscanflow.medicalplatform.auth.IdentityProvider;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.keycloak.representation.KeycloakCreateUserRequest;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.keycloak.representation.KeycloakUserRepresentation;
@@ -15,7 +16,7 @@ import java.util.List;
  * exposes operations in terms of application user accounts and roles.</p>
  */
 @Component
-public class KeycloakIdentityProvider {
+public class KeycloakIdentityProvider implements IdentityProvider {
 
     private final KeycloakAdminTokenClient tokenClient;
     private final KeycloakUsersClient usersClient;
@@ -34,6 +35,7 @@ public class KeycloakIdentityProvider {
         this.userMapper = userMapper;
     }
 
+    @Override
     public List<UserAccount> getUsers() {
         String accessToken = tokenClient.getAccessToken();
 
@@ -42,6 +44,7 @@ public class KeycloakIdentityProvider {
                 .toList();
     }
 
+    @Override
     public UserAccount getUser(String userId) {
         String accessToken = tokenClient.getAccessToken();
         KeycloakUserRepresentation user = usersClient.getUser(accessToken, userId);
@@ -49,6 +52,7 @@ public class KeycloakIdentityProvider {
         return toUserAccount(accessToken, user);
     }
 
+    @Override
     public long countEnabledAdmins() {
         String accessToken = tokenClient.getAccessToken();
 
@@ -59,6 +63,7 @@ public class KeycloakIdentityProvider {
                 .count();
     }
 
+    @Override
     public String createUser(
             String firstName,
             String lastName,
@@ -81,6 +86,7 @@ public class KeycloakIdentityProvider {
         return userId;
     }
 
+    @Override
     public void updateUserEnabled(String userId, boolean enabled) {
         String accessToken = tokenClient.getAccessToken();
 
