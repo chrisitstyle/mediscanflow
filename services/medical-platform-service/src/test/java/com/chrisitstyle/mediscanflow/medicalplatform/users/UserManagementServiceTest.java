@@ -5,6 +5,7 @@ import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.AuthenticatedUserProvider;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.dto.CurrentUserDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.auth.keycloak.KeycloakIdentityProvider;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.LastActiveAdminException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.SelfDisableNotAllowedException;
 import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.CreateUserRequestDTO;
@@ -37,12 +38,13 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserManagementServiceTest {
+
     private static final String CURRENT_ADMIN_ID = "admin-1";
     private static final String TARGET_USER_ID = "user-1";
     private static final String TARGET_ADMIN_ID = "admin-2";
 
     @Mock
-    private KeycloakAdminClient keycloakAdminClient;
+    private KeycloakIdentityProvider identityProvider;
 
     @Mock
     private AuditEventService auditEventService;
@@ -55,7 +57,7 @@ class UserManagementServiceTest {
     @BeforeEach
     void setUp() {
         userManagementService = new UserManagementService(
-                keycloakAdminClient,
+                identityProvider,
                 auditEventService,
                 authenticatedUserProvider,
                 new UserMapper()
@@ -64,7 +66,7 @@ class UserManagementServiceTest {
 
     @Test
     void getUsersReturnsMappedUsers() {
-        when(keycloakAdminClient.getUsers())
+        when(identityProvider.getUsers())
                 .thenReturn(List.of(
                         user(TARGET_ADMIN_ID, "admin@test.com", UserRole.ADMIN, true),
                         user(TARGET_USER_ID, "doctor@test.com", UserRole.DOCTOR, false)
@@ -84,12 +86,12 @@ class UserManagementServiceTest {
                 () -> assertEquals(UserStatusDTO.DISABLED, users.get(1).status())
         );
 
-        verify(keycloakAdminClient).getUsers();
+        verify(identityProvider).getUsers();
     }
 
     @Test
     void getUserReturnsMappedUser() {
-        when(keycloakAdminClient.getUser(TARGET_USER_ID))
+        when(identityProvider.getUser(TARGET_USER_ID))
                 .thenReturn(user(TARGET_USER_ID, "doctor@test.com", UserRole.DOCTOR, true));
 
         UserDTO user = userManagementService.getUser(TARGET_USER_ID);
@@ -103,14 +105,14 @@ class UserManagementServiceTest {
                 () -> assertEquals(UserStatusDTO.ENABLED, user.status())
         );
 
-        verify(keycloakAdminClient).getUser(TARGET_USER_ID);
+        verify(identityProvider).getUser(TARGET_USER_ID);
     }
 
     @Test
     void updateUserStatusDisablesUserAndRecordsAuditEvent() {
         UserAccount targetUser = user(TARGET_USER_ID, "doctor@test.com", UserRole.DOCTOR, true);
 
-        when(keycloakAdminClient.getUser(TARGET_USER_ID))
+        when(identityProvider.getUser(TARGET_USER_ID))
                 .thenReturn(targetUser);
         when(authenticatedUserProvider.getCurrentUser())
                 .thenReturn(currentAdmin());
@@ -126,7 +128,7 @@ class UserManagementServiceTest {
                 () -> assertEquals(UserStatusDTO.DISABLED, response.status())
         );
 
-        verify(keycloakAdminClient).updateUserEnabled(TARGET_USER_ID, false);
+        verify(identityProvider).updateUserEnabled(TARGET_USER_ID, false);
         verifyStatusAuditEvent(
                 AuditEventType.USER_DISABLED,
                 targetUser.withEnabled(false),
@@ -138,7 +140,7 @@ class UserManagementServiceTest {
     void updateUserStatusEnablesUserAndRecordsAuditEvent() {
         UserAccount targetUser = user(TARGET_USER_ID, "doctor@test.com", UserRole.DOCTOR, false);
 
-        when(keycloakAdminClient.getUser(TARGET_USER_ID))
+        when(identityProvider.getUser(TARGET_USER_ID))
                 .thenReturn(targetUser);
 
         UserDTO response = userManagementService.updateUserStatus(
@@ -152,7 +154,7 @@ class UserManagementServiceTest {
                 () -> assertEquals(UserStatusDTO.ENABLED, response.status())
         );
 
-        verify(keycloakAdminClient).updateUserEnabled(TARGET_USER_ID, true);
+        verify(identityProvider).updateUserEnabled(TARGET_USER_ID, true);
         verifyNoInteractions(authenticatedUserProvider);
         verifyStatusAuditEvent(
                 AuditEventType.USER_ENABLED,
@@ -165,7 +167,7 @@ class UserManagementServiceTest {
     void updateUserStatusDoesNotUpdateOrRecordAuditEventWhenStatusDoesNotChange() {
         UserAccount targetUser = user(TARGET_USER_ID, "doctor@test.com", UserRole.DOCTOR, false);
 
-        when(keycloakAdminClient.getUser(TARGET_USER_ID))
+        when(identityProvider.getUser(TARGET_USER_ID))
                 .thenReturn(targetUser);
 
         UserDTO response = userManagementService.updateUserStatus(
@@ -179,7 +181,7 @@ class UserManagementServiceTest {
                 () -> assertEquals(UserStatusDTO.DISABLED, response.status())
         );
 
-        verify(keycloakAdminClient, never()).updateUserEnabled(anyString(), anyBoolean());
+        verify(identityProvider, never()).updateUserEnabled(anyString(), anyBoolean());
         verifyNoInteractions(authenticatedUserProvider);
         verifyNoInteractions(auditEventService);
     }
@@ -189,7 +191,7 @@ class UserManagementServiceTest {
         UserAccount currentAdminAccount = user(CURRENT_ADMIN_ID, "admin@test.com", UserRole.ADMIN, true);
         UpdateUserStatusRequestDTO request = new UpdateUserStatusRequestDTO(UserStatusDTO.DISABLED);
 
-        when(keycloakAdminClient.getUser(CURRENT_ADMIN_ID))
+        when(identityProvider.getUser(CURRENT_ADMIN_ID))
                 .thenReturn(currentAdminAccount);
         when(authenticatedUserProvider.getCurrentUser())
                 .thenReturn(currentAdmin());
@@ -201,8 +203,8 @@ class UserManagementServiceTest {
 
         assertEquals("Admin cannot disable their own account.", exception.getMessage());
 
-        verify(keycloakAdminClient, never()).countEnabledAdmins();
-        verify(keycloakAdminClient, never()).updateUserEnabled(anyString(), anyBoolean());
+        verify(identityProvider, never()).countEnabledAdmins();
+        verify(identityProvider, never()).updateUserEnabled(anyString(), anyBoolean());
         verifyNoInteractions(auditEventService);
     }
 
@@ -211,11 +213,11 @@ class UserManagementServiceTest {
         UserAccount targetAdmin = user(TARGET_ADMIN_ID, "target-admin@test.com", UserRole.ADMIN, true);
         UpdateUserStatusRequestDTO request = new UpdateUserStatusRequestDTO(UserStatusDTO.DISABLED);
 
-        when(keycloakAdminClient.getUser(TARGET_ADMIN_ID))
+        when(identityProvider.getUser(TARGET_ADMIN_ID))
                 .thenReturn(targetAdmin);
         when(authenticatedUserProvider.getCurrentUser())
                 .thenReturn(currentAdmin());
-        when(keycloakAdminClient.countEnabledAdmins())
+        when(identityProvider.countEnabledAdmins())
                 .thenReturn(1L);
 
         LastActiveAdminException exception = assertThrows(
@@ -225,8 +227,8 @@ class UserManagementServiceTest {
 
         assertEquals("Cannot disable the last active admin account.", exception.getMessage());
 
-        verify(keycloakAdminClient).countEnabledAdmins();
-        verify(keycloakAdminClient, never()).updateUserEnabled(anyString(), anyBoolean());
+        verify(identityProvider).countEnabledAdmins();
+        verify(identityProvider, never()).updateUserEnabled(anyString(), anyBoolean());
         verifyNoInteractions(auditEventService);
     }
 
@@ -234,11 +236,11 @@ class UserManagementServiceTest {
     void updateUserStatusAllowsAdminDisableWhenMoreThanOneActiveAdminExists() {
         UserAccount targetAdmin = user(TARGET_ADMIN_ID, "target-admin@test.com", UserRole.ADMIN, true);
 
-        when(keycloakAdminClient.getUser(TARGET_ADMIN_ID))
+        when(identityProvider.getUser(TARGET_ADMIN_ID))
                 .thenReturn(targetAdmin);
         when(authenticatedUserProvider.getCurrentUser())
                 .thenReturn(currentAdmin());
-        when(keycloakAdminClient.countEnabledAdmins())
+        when(identityProvider.countEnabledAdmins())
                 .thenReturn(2L);
 
         UserDTO response = userManagementService.updateUserStatus(
@@ -248,8 +250,8 @@ class UserManagementServiceTest {
 
         assertEquals(UserStatusDTO.DISABLED, response.status());
 
-        verify(keycloakAdminClient).countEnabledAdmins();
-        verify(keycloakAdminClient).updateUserEnabled(TARGET_ADMIN_ID, false);
+        verify(identityProvider).countEnabledAdmins();
+        verify(identityProvider).updateUserEnabled(TARGET_ADMIN_ID, false);
         verifyStatusAuditEvent(
                 AuditEventType.USER_DISABLED,
                 targetAdmin.withEnabled(false),
@@ -267,7 +269,7 @@ class UserManagementServiceTest {
                 "Temporary123"
         );
 
-        when(keycloakAdminClient.createUser(
+        when(identityProvider.createUser(
                 "John",
                 "Smith",
                 "john.smith@test.com",
@@ -286,7 +288,7 @@ class UserManagementServiceTest {
                 () -> assertTrue(response.enabled())
         );
 
-        verify(keycloakAdminClient).createUser(
+        verify(identityProvider).createUser(
                 "John",
                 "Smith",
                 "john.smith@test.com",

@@ -1,4 +1,4 @@
-package com.chrisitstyle.mediscanflow.medicalplatform.users;
+package com.chrisitstyle.mediscanflow.medicalplatform.auth.keycloak;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

@@ -5,7 +5,7 @@ import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.UserStatusDTO;
 
 import java.util.Set;
 
-record UserAccount(
+public record UserAccount(
         String id,
         String email,
         String firstName,
@@ -13,19 +13,23 @@ record UserAccount(
         Set<UserRole> roles,
         boolean enabled
 ) {
-    UserAccount {
-        roles = Set.copyOf(roles);
-    }
 
-    boolean hasRole(UserRole role) {
+    public boolean hasRole(UserRole role) {
         return roles.contains(role);
     }
 
-    UserStatusDTO status() {
-        return UserStatusDTO.fromEnabled(enabled);
+    public UserStatusDTO status() {
+        return enabled ? UserStatusDTO.ENABLED : UserStatusDTO.DISABLED;
     }
 
-    UserAccount withEnabled(boolean enabled) {
-        return new UserAccount(id, email, firstName, lastName, roles, enabled);
+    public UserAccount withEnabled(boolean enabled) {
+        return new UserAccount(
+                id,
+                email,
+                firstName,
+                lastName,
+                roles,
+                enabled
+        );
     }
 }
