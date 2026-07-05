@@ -3,9 +3,9 @@ package com.chrisitstyle.mediscanflow.medicalplatform.users;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventService;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.AuthenticatedUserProvider;
+import com.chrisitstyle.mediscanflow.medicalplatform.auth.IdentityProvider;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.dto.CurrentUserDTO;
-import com.chrisitstyle.mediscanflow.medicalplatform.auth.keycloak.KeycloakIdentityProvider;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.LastActiveAdminException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.SelfDisableNotAllowedException;
 import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.CreateUserRequestDTO;
@@ -19,18 +19,27 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Application service responsible for administrative user-management operations.
+ *
+ * <p>The service exposes user-management use cases such as listing users,
+ * creating accounts and changing account status. It delegates identity-provider
+ * operations to {@link IdentityProvider}
+ * and keeps application rules such as preventing self-disable and protecting the
+ * last active admin account.</p>
+ */
 @Service
 public class UserManagementService {
 
     private static final long MIN_ACTIVE_ADMIN_COUNT_AFTER_DISABLE = 1L;
 
-    private final KeycloakIdentityProvider identityProvider;
+    private final IdentityProvider identityProvider;
     private final AuditEventService auditEventService;
     private final AuthenticatedUserProvider authenticatedUserProvider;
     private final UserMapper userMapper;
 
     public UserManagementService(
-            KeycloakIdentityProvider identityProvider,
+            IdentityProvider identityProvider,
             AuditEventService auditEventService,
             AuthenticatedUserProvider authenticatedUserProvider,
             UserMapper userMapper

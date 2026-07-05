@@ -3,16 +3,12 @@ package com.chrisitstyle.mediscanflow.medicalplatform.users;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventService;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.AuthenticatedUserProvider;
+import com.chrisitstyle.mediscanflow.medicalplatform.auth.IdentityProvider;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.dto.CurrentUserDTO;
-import com.chrisitstyle.mediscanflow.medicalplatform.auth.keycloak.KeycloakIdentityProvider;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.LastActiveAdminException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.SelfDisableNotAllowedException;
-import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.CreateUserRequestDTO;
-import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.UpdateUserStatusRequestDTO;
-import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.UserCreatedResponseDTO;
-import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.UserDTO;
-import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.UserStatusDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,18 +19,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserManagementServiceTest {
@@ -44,7 +31,7 @@ class UserManagementServiceTest {
     private static final String TARGET_ADMIN_ID = "admin-2";
 
     @Mock
-    private KeycloakIdentityProvider identityProvider;
+    private IdentityProvider identityProvider;
 
     @Mock
     private AuditEventService auditEventService;
