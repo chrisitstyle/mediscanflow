@@ -17,7 +17,6 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
     @ExceptionHandler(ResourceNotFoundException.class)
     ResponseEntity<ApiErrorResponseDTO> handleResourceNotFound(
             ResourceNotFoundException exception,
@@ -66,6 +65,38 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(LastActiveAdminException.class)
+    ResponseEntity<ApiErrorResponseDTO> handleLastActiveAdmin(
+            LastActiveAdminException exception,
+            HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.CONFLICT;
+
+        return ResponseEntity.status(status)
+                .body(ApiErrorResponseDTO.of(
+                        status.value(),
+                        status.getReasonPhrase(),
+                        exception.getMessage(),
+                        request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler(SelfDisableNotAllowedException.class)
+    ResponseEntity<ApiErrorResponseDTO> handleSelfDisableNotAllowed(
+            SelfDisableNotAllowedException exception,
+            HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        return ResponseEntity.status(status)
+                .body(ApiErrorResponseDTO.of(
+                        status.value(),
+                        status.getReasonPhrase(),
+                        exception.getMessage(),
+                        request.getRequestURI()
+                ));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ApiErrorResponseDTO> handleMethodArgumentNotValid(
             MethodArgumentNotValidException exception,
@@ -75,12 +106,10 @@ public class GlobalExceptionHandler {
         Map<String, String> validationErrors = new LinkedHashMap<>();
 
         exception.getBindingResult().getFieldErrors()
-                .forEach(fieldError ->
-                        validationErrors.put(
-                                fieldError.getField(),
-                                fieldError.getDefaultMessage()
-                        )
-                );
+                .forEach(fieldError -> validationErrors.put(
+                        fieldError.getField(),
+                        fieldError.getDefaultMessage()
+                ));
 
         return ResponseEntity.status(status)
                 .body(ApiErrorResponseDTO.withValidationErrors(
@@ -101,12 +130,10 @@ public class GlobalExceptionHandler {
         Map<String, String> validationErrors = new LinkedHashMap<>();
 
         exception.getConstraintViolations()
-                .forEach(violation ->
-                        validationErrors.put(
-                                violation.getPropertyPath().toString(),
-                                violation.getMessage()
-                        )
-                );
+                .forEach(violation -> validationErrors.put(
+                        violation.getPropertyPath().toString(),
+                        violation.getMessage()
+                ));
 
         return ResponseEntity.status(status)
                 .body(ApiErrorResponseDTO.withValidationErrors(
@@ -243,6 +270,4 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
     }
-
-
 }
