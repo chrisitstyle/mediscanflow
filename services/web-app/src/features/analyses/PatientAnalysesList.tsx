@@ -22,33 +22,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Analysis } from "@/types/analysis";
+import { formatDateTime, formatFileSize } from "@/lib/formatters";
 
 type PatientAnalysesListProps = {
   analyses: Analysis[];
 };
-
-function formatDateTime(value: string | null) {
-  if (!value) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) {
-    return `${bytes} B`;
-  }
-
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
-  }
-
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
 
 export function PatientAnalysesList({ analyses }: PatientAnalysesListProps) {
   return (

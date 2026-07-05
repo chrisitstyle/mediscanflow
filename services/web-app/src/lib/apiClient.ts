@@ -1,4 +1,5 @@
 import { getAccessToken } from "@/lib/authTokenStore";
+import type { ApiError, ApiValidationErrors } from "@/types/apiError";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend";
 
@@ -12,34 +13,22 @@ export type ApiFetchOptions = {
   headers?: HeadersInit;
 };
 
-type ApiErrorResponse = {
-  timestamp?: string;
-  status?: number;
-  error?: string;
-  message?: string;
-  path?: string;
-  validationErrors?: Record<string, string>;
-};
-
 export class ApiClientError extends Error {
   status: number;
   error?: string;
   path?: string;
-  validationErrors?: Record<string, string>;
+  validationErrors?: ApiValidationErrors;
+  response: ApiError;
 
-  constructor(
-    message: string,
-    status: number,
-    error?: string,
-    path?: string,
-    validationErrors?: Record<string, string>,
-  ) {
-    super(message);
+  constructor(response: ApiError) {
+    super(response.message || response.error || "Request failed");
+
     this.name = "ApiClientError";
-    this.status = status;
-    this.error = error;
-    this.path = path;
-    this.validationErrors = validationErrors;
+    this.status = response.status;
+    this.error = response.error;
+    this.path = response.path;
+    this.validationErrors = response.validationErrors;
+    this.response = response;
   }
 }
 
@@ -80,13 +69,7 @@ export async function apiFetch<T>(
   if (!response.ok) {
     const errorResponse = await parseErrorResponse(response);
 
-    throw new ApiClientError(
-      errorResponse.message || response.statusText || "Request failed",
-      response.status,
-      errorResponse.error,
-      errorResponse.path,
-      errorResponse.validationErrors,
-    );
+    throw new ApiClientError(errorResponse);
   }
 
   if (response.status === 204) {
@@ -96,16 +79,34 @@ export async function apiFetch<T>(
   return response.json() as Promise<T>;
 }
 
-async function parseErrorResponse(
-  response: Response,
-): Promise<ApiErrorResponse> {
+async function parseErrorResponse(response: Response): Promise<ApiError> {
   try {
-    return (await response.json()) as ApiErrorResponse;
+    const errorResponse = (await response.json()) as Partial<ApiError>;
+
+    return normalizeErrorResponse(errorResponse, response);
   } catch {
-    return {
-      status: response.status,
-      error: response.statusText,
-      message: response.statusText || "Request failed",
-    };
+    return fallbackErrorResponse(response);
   }
+}
+
+function normalizeErrorResponse(
+  errorResponse: Partial<ApiError>,
+  response: Response,
+): ApiError {
+  return {
+    timestamp: errorResponse.timestamp,
+    status: errorResponse.status ?? response.status,
+    error: errorResponse.error ?? response.statusText,
+    message: (errorResponse.message ?? response.statusText) || "Request failed",
+    path: errorResponse.path,
+    validationErrors: errorResponse.validationErrors,
+  };
+}
+
+function fallbackErrorResponse(response: Response): ApiError {
+  return {
+    status: response.status,
+    error: response.statusText,
+    message: response.statusText || "Request failed",
+  };
 }
