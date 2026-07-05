@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-class UserMapper {
+public class UserMapper {
     UserDTO toDTO(UserAccount user) {
         return new UserDTO(
                 user.id(),

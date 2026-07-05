@@ -5,13 +5,14 @@ import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.AuthenticatedUserProvider;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.dto.CurrentUserDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.auth.keycloak.KeycloakIdentityProvider;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.LastActiveAdminException;
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.SelfDisableNotAllowedException;
 import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.CreateUserRequestDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.UpdateUserStatusRequestDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.UserCreatedResponseDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.UserDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.UserStatusDTO;
-import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.LastActiveAdminException;
-import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.SelfDisableNotAllowedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,20 +21,21 @@ import java.util.Locale;
 
 @Service
 public class UserManagementService {
+
     private static final long MIN_ACTIVE_ADMIN_COUNT_AFTER_DISABLE = 1L;
 
-    private final KeycloakAdminClient keycloakAdminClient;
+    private final KeycloakIdentityProvider identityProvider;
     private final AuditEventService auditEventService;
     private final AuthenticatedUserProvider authenticatedUserProvider;
     private final UserMapper userMapper;
 
     public UserManagementService(
-            KeycloakAdminClient keycloakAdminClient,
+            KeycloakIdentityProvider identityProvider,
             AuditEventService auditEventService,
             AuthenticatedUserProvider authenticatedUserProvider,
             UserMapper userMapper
     ) {
-        this.keycloakAdminClient = keycloakAdminClient;
+        this.identityProvider = identityProvider;
         this.auditEventService = auditEventService;
         this.authenticatedUserProvider = authenticatedUserProvider;
         this.userMapper = userMapper;
@@ -41,12 +43,12 @@ public class UserManagementService {
 
     @Transactional(readOnly = true)
     public List<UserDTO> getUsers() {
-        return userMapper.toDTOs(keycloakAdminClient.getUsers());
+        return userMapper.toDTOs(identityProvider.getUsers());
     }
 
     @Transactional(readOnly = true)
     public UserDTO getUser(String userId) {
-        return userMapper.toDTO(keycloakAdminClient.getUser(userId));
+        return userMapper.toDTO(identityProvider.getUser(userId));
     }
 
     @Transactional
@@ -55,7 +57,7 @@ public class UserManagementService {
         String lastName = request.lastName().trim();
         String email = request.email().trim().toLowerCase(Locale.ROOT);
 
-        String userId = keycloakAdminClient.createUser(
+        String userId = identityProvider.createUser(
                 firstName,
                 lastName,
                 email,
@@ -82,7 +84,7 @@ public class UserManagementService {
 
     @Transactional
     public UserDTO updateUserStatus(String userId, UpdateUserStatusRequestDTO request) {
-        UserAccount targetUser = keycloakAdminClient.getUser(userId);
+        UserAccount targetUser = identityProvider.getUser(userId);
         UserStatusDTO requestedStatus = request.status();
 
         if (targetUser.status() == requestedStatus) {
@@ -93,7 +95,7 @@ public class UserManagementService {
             validateDisableRequest(targetUser);
         }
 
-        keycloakAdminClient.updateUserEnabled(targetUser.id(), requestedStatus.isEnabled());
+        identityProvider.updateUserEnabled(targetUser.id(), requestedStatus.isEnabled());
 
         UserAccount updatedUser = targetUser.withEnabled(requestedStatus.isEnabled());
         recordStatusChangeEvent(updatedUser);
@@ -114,7 +116,7 @@ public class UserManagementService {
     }
 
     private boolean disablingWouldRemoveLastActiveAdmin() {
-        return keycloakAdminClient.countEnabledAdmins() <= MIN_ACTIVE_ADMIN_COUNT_AFTER_DISABLE;
+        return identityProvider.countEnabledAdmins() <= MIN_ACTIVE_ADMIN_COUNT_AFTER_DISABLE;
     }
 
     private void recordStatusChangeEvent(UserAccount user) {
