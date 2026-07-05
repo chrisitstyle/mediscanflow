@@ -187,6 +187,7 @@ class UserManagementServiceTest {
     @Test
     void updateUserStatusRejectsSelfDisable() {
         UserAccount currentAdminAccount = user(CURRENT_ADMIN_ID, "admin@test.com", UserRole.ADMIN, true);
+        UpdateUserStatusRequestDTO request = new UpdateUserStatusRequestDTO(UserStatusDTO.DISABLED);
 
         when(keycloakAdminClient.getUser(CURRENT_ADMIN_ID))
                 .thenReturn(currentAdminAccount);
@@ -195,10 +196,7 @@ class UserManagementServiceTest {
 
         SelfDisableNotAllowedException exception = assertThrows(
                 SelfDisableNotAllowedException.class,
-                () -> userManagementService.updateUserStatus(
-                        CURRENT_ADMIN_ID,
-                        new UpdateUserStatusRequestDTO(UserStatusDTO.DISABLED)
-                )
+                () -> userManagementService.updateUserStatus(CURRENT_ADMIN_ID, request)
         );
 
         assertEquals("Admin cannot disable their own account.", exception.getMessage());
@@ -211,6 +209,7 @@ class UserManagementServiceTest {
     @Test
     void updateUserStatusRejectsLastActiveAdminDisable() {
         UserAccount targetAdmin = user(TARGET_ADMIN_ID, "target-admin@test.com", UserRole.ADMIN, true);
+        UpdateUserStatusRequestDTO request = new UpdateUserStatusRequestDTO(UserStatusDTO.DISABLED);
 
         when(keycloakAdminClient.getUser(TARGET_ADMIN_ID))
                 .thenReturn(targetAdmin);
@@ -221,10 +220,7 @@ class UserManagementServiceTest {
 
         LastActiveAdminException exception = assertThrows(
                 LastActiveAdminException.class,
-                () -> userManagementService.updateUserStatus(
-                        TARGET_ADMIN_ID,
-                        new UpdateUserStatusRequestDTO(UserStatusDTO.DISABLED)
-                )
+                () -> userManagementService.updateUserStatus(TARGET_ADMIN_ID, request)
         );
 
         assertEquals("Cannot disable the last active admin account.", exception.getMessage());
