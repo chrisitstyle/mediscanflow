@@ -5,6 +5,12 @@ import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.UserManage
 
 import java.net.URI;
 
+/**
+ * Shared helper methods for low-level Keycloak Admin API HTTP interactions.
+ *
+ * <p>This class keeps repeated concerns such as bearer token formatting,
+ * created-user id extraction and not-found exception mapping in one place.</p>
+ */
 final class KeycloakHttpSupport {
 
     private KeycloakHttpSupport() {

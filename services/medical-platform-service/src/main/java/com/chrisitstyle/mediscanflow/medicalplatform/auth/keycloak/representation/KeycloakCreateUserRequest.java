@@ -2,6 +2,12 @@ package com.chrisitstyle.mediscanflow.medicalplatform.auth.keycloak.representati
 
 import java.util.List;
 
+/**
+ * Request payload used to create a user account in Keycloak.
+ *
+ * <p>The request is tailored to the user-management flow in MediScanFlow and
+ * creates enabled, email-verified users with an initial temporary password.</p>
+ */
 public record KeycloakCreateUserRequest(
         String username,
         String email,
@@ -31,6 +37,9 @@ public record KeycloakCreateUserRequest(
         );
     }
 
+    /**
+     * Keycloak credential representation used for the initial user password.
+     */
     public record Credential(
             String type,
             String value,

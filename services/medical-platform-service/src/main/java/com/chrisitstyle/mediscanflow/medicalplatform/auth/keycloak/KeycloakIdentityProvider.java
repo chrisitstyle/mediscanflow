@@ -8,6 +8,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+/**
+ * Application-facing facade for identity management operations backed by Keycloak.
+ *
+ * <p>This component hides Keycloak-specific HTTP clients from the users module and
+ * exposes operations in terms of application user accounts and roles.</p>
+ */
 @Component
 public class KeycloakIdentityProvider {
 

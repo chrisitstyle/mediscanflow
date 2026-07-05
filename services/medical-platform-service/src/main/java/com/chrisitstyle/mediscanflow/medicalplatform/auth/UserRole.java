@@ -5,6 +5,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Application roles supported by MediScanFlow.
+ *
+ * <p>Roles are used both as domain-level user roles and as Spring Security
+ * authorities with the {@code ROLE_} prefix.</p>
+ */
 public enum UserRole {
     ADMIN,
     DOCTOR,

@@ -18,6 +18,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Client responsible for user-related operations against the Keycloak Admin API.
+ *
+ * <p>It loads users, creates new users and updates the enabled status of existing
+ * Keycloak accounts.</p>
+ */
 @Component
 class KeycloakUsersClient {
 
