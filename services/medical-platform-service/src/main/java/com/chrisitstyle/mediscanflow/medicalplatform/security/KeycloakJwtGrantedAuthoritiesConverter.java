@@ -15,40 +15,28 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Converts Keycloak JWT claims into Spring Security authorities.
+ *
+ * <p>The converter keeps the default scope-based authorities and additionally maps
+ * supported Keycloak realm roles from the {@code realm_access.roles} claim to
+ * application authorities such as {@code ROLE_ADMIN}, {@code ROLE_DOCTOR} and
+ * {@code ROLE_STAFF}.</p>
+ */
 @Component
 public class KeycloakJwtGrantedAuthoritiesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
+
+    private static final String REALM_ACCESS_CLAIM = "realm_access";
+    private static final String ROLES_CLAIM = "roles";
 
     private final JwtGrantedAuthoritiesConverter scopeAuthoritiesConverter =
             new JwtGrantedAuthoritiesConverter();
 
     @Override
     public Collection<GrantedAuthority> convert(@NonNull Jwt jwt) {
-        Set<GrantedAuthority> authorities = new HashSet<>();
+        Set<GrantedAuthority> authorities = new HashSet<>(scopeAuthoritiesConverter.convert(jwt));
 
-        authorities.addAll(scopeAuthoritiesConverter.convert(jwt));
-        authorities.addAll(extractRealmRoles(jwt));
-
-        return authorities;
-    }
-
-    private Collection<GrantedAuthority> extractRealmRoles(Jwt jwt) {
-        Set<GrantedAuthority> authorities = new HashSet<>();
-
-        Object realmAccessObject = jwt.getClaim("realm_access");
-
-        if (!(realmAccessObject instanceof Map<?, ?> realmAccess)) {
-            return authorities;
-        }
-
-        Object rolesObject = realmAccess.get("roles");
-
-        if (!(rolesObject instanceof Collection<?> roles)) {
-            return authorities;
-        }
-
-        roles.stream()
-                .filter(String.class::isInstance)
-                .map(String.class::cast)
+        extractRealmRoleNames(jwt).stream()
                 .map(UserRole::fromName)
                 .flatMap(Optional::stream)
                 .map(UserRole::authority)
@@ -56,5 +44,24 @@ public class KeycloakJwtGrantedAuthoritiesConverter implements Converter<Jwt, Co
                 .forEach(authorities::add);
 
         return authorities;
+    }
+
+    private Collection<String> extractRealmRoleNames(Jwt jwt) {
+        Object realmAccessObject = jwt.getClaim(REALM_ACCESS_CLAIM);
+
+        if (!(realmAccessObject instanceof Map<?, ?> realmAccess)) {
+            return Set.of();
+        }
+
+        Object rolesObject = realmAccess.get(ROLES_CLAIM);
+
+        if (!(rolesObject instanceof Collection<?> roles)) {
+            return Set.of();
+        }
+
+        return roles.stream()
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .toList();
     }
 }
