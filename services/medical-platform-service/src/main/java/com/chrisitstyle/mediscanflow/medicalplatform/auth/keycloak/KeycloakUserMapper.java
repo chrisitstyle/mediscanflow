@@ -7,6 +7,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
+/**
+ * Mapper that converts Keycloak user data into the application user account model.
+ */
 @Component
 class KeycloakUserMapper {
 

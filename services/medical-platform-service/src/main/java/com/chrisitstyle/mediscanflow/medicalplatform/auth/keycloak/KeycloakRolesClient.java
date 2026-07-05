@@ -19,6 +19,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Client responsible for reading and assigning Keycloak realm roles.
+ *
+ * <p>It translates Keycloak role mappings into application {@link UserRole} values
+ * and assigns realm roles during user creation.</p>
+ */
 @Component
 class KeycloakRolesClient {
 

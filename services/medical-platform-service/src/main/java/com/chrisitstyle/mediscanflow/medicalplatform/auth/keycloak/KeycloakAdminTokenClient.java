@@ -11,6 +11,12 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
+/**
+ * Client responsible for obtaining access tokens for Keycloak Admin API calls.
+ *
+ * <p>It uses the client credentials grant configured in {@link KeycloakAdminProperties}
+ * and returns bearer tokens used by the other Keycloak admin clients.</p>
+ */
 @Component
 class KeycloakAdminTokenClient {
 
