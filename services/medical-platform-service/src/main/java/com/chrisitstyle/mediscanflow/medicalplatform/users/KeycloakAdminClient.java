@@ -11,15 +11,17 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.net.URI;
+import java.util.stream.Collectors;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Component
 public class KeycloakAdminClient {
@@ -41,7 +43,7 @@ public class KeycloakAdminClient {
                 .build();
     }
 
-    public List<UserAccount> getUsers() {
+    List<UserAccount> getUsers() {
         String accessToken = getAdminAccessToken();
 
         return getKeycloakUsers(accessToken).stream()
@@ -49,14 +51,14 @@ public class KeycloakAdminClient {
                 .toList();
     }
 
-    public UserAccount getUser(String userId) {
+    UserAccount getUser(String userId) {
         String accessToken = getAdminAccessToken();
         KeycloakUserRepresentation user = getKeycloakUser(accessToken, userId);
 
         return toUserAccount(accessToken, user);
     }
 
-    public long countEnabledAdmins() {
+    long countEnabledAdmins() {
         String accessToken = getAdminAccessToken();
 
         return getKeycloakUsers(accessToken).stream()
@@ -66,7 +68,7 @@ public class KeycloakAdminClient {
                 .count();
     }
 
-    public String createUser(
+    String createUser(
             String firstName,
             String lastName,
             String email,
@@ -96,15 +98,20 @@ public class KeycloakAdminClient {
             return userId;
         } catch (HttpClientErrorException.Conflict exception) {
             throw new UserManagementException("User with this email already exists.", exception);
-        } catch (HttpClientErrorException exception) {
+        } catch (RestClientResponseException exception) {
             throw new UserManagementException(
                     "Keycloak rejected user creation request: " + exception.getStatusCode(),
+                    exception
+            );
+        } catch (RestClientException exception) {
+            throw new UserManagementException(
+                    "Could not connect to Keycloak while creating user.",
                     exception
             );
         }
     }
 
-    public void updateUserEnabled(String userId, boolean enabled) {
+    void updateUserEnabled(String userId, boolean enabled) {
         String accessToken = getAdminAccessToken();
 
         try {
@@ -117,9 +124,14 @@ public class KeycloakAdminClient {
                     .toBodilessEntity();
         } catch (HttpClientErrorException.NotFound exception) {
             throw userNotFound(userId, exception);
-        } catch (HttpClientErrorException exception) {
+        } catch (RestClientResponseException exception) {
             throw new UserManagementException(
                     "Keycloak rejected user status update request: " + exception.getStatusCode(),
+                    exception
+            );
+        } catch (RestClientException exception) {
+            throw new UserManagementException(
+                    "Could not connect to Keycloak while updating user status.",
                     exception
             );
         }
@@ -141,9 +153,14 @@ public class KeycloakAdminClient {
             }
 
             return Arrays.asList(users);
-        } catch (HttpClientErrorException exception) {
+        } catch (RestClientResponseException exception) {
             throw new UserManagementException(
                     "Could not load users from Keycloak: " + exception.getStatusCode(),
+                    exception
+            );
+        } catch (RestClientException exception) {
+            throw new UserManagementException(
+                    "Could not connect to Keycloak while loading users.",
                     exception
             );
         }
@@ -164,9 +181,14 @@ public class KeycloakAdminClient {
             return user;
         } catch (HttpClientErrorException.NotFound exception) {
             throw userNotFound(userId, exception);
-        } catch (HttpClientErrorException exception) {
+        } catch (RestClientResponseException exception) {
             throw new UserManagementException(
                     "Could not load user from Keycloak: " + exception.getStatusCode(),
+                    exception
+            );
+        } catch (RestClientException exception) {
+            throw new UserManagementException(
+                    "Could not connect to Keycloak while loading user.",
                     exception
             );
         }
@@ -210,9 +232,14 @@ public class KeycloakAdminClient {
                     .collect(Collectors.toCollection(() -> EnumSet.noneOf(UserRole.class)));
         } catch (HttpClientErrorException.NotFound exception) {
             throw userNotFound(userId, exception);
-        } catch (HttpClientErrorException exception) {
+        } catch (RestClientResponseException exception) {
             throw new UserManagementException(
                     "Could not load user roles from Keycloak: " + exception.getStatusCode(),
+                    exception
+            );
+        } catch (RestClientException exception) {
+            throw new UserManagementException(
+                    "Could not connect to Keycloak while loading user roles.",
                     exception
             );
         }
@@ -232,9 +259,14 @@ public class KeycloakAdminClient {
             }
 
             return response.accessToken();
-        } catch (HttpClientErrorException exception) {
+        } catch (RestClientResponseException exception) {
             throw new UserManagementException(
                     "Could not obtain Keycloak admin access token: " + exception.getStatusCode(),
+                    exception
+            );
+        } catch (RestClientException exception) {
+            throw new UserManagementException(
+                    "Could not connect to Keycloak while obtaining admin access token.",
                     exception
             );
         }
@@ -287,9 +319,14 @@ public class KeycloakAdminClient {
                     .body(List.of(roleRepresentation))
                     .retrieve()
                     .toBodilessEntity();
-        } catch (HttpClientErrorException exception) {
+        } catch (RestClientResponseException exception) {
             throw new UserManagementException(
-                    "Could not assign role " + role.name() + " to user.",
+                    "Could not assign role " + role.name() + " to user: " + exception.getStatusCode(),
+                    exception
+            );
+        } catch (RestClientException exception) {
+            throw new UserManagementException(
+                    "Could not connect to Keycloak while assigning role " + role.name() + " to user.",
                     exception
             );
         }
@@ -308,9 +345,14 @@ public class KeycloakAdminClient {
             }
 
             return roleRepresentation;
-        } catch (HttpClientErrorException exception) {
+        } catch (RestClientResponseException exception) {
             throw new UserManagementException(
-                    "Could not load Keycloak role: " + role.name(),
+                    "Could not load Keycloak role " + role.name() + ": " + exception.getStatusCode(),
+                    exception
+            );
+        } catch (RestClientException exception) {
+            throw new UserManagementException(
+                    "Could not connect to Keycloak while loading role " + role.name() + ".",
                     exception
             );
         }

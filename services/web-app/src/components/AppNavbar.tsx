@@ -6,19 +6,21 @@ import { LogOut, ScanLine } from "lucide-react";
 
 import { SystemStatusPopover } from "@/features/system/SystemStatusPopover";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { canViewSystemStatus } from "@/lib/permissions";
+import { canManageUsers, canViewSystemStatus } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/AuthProvider";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-const navItems = [
+const baseNavItems = [
   { href: "/", label: "Dashboard" },
   { href: "/patients", label: "Patients" },
   { href: "/analyses", label: "Analyses" },
   { href: "/activity", label: "Activity" },
 ];
+
+const adminNavItems = [{ href: "/admin/users", label: "Users" }];
 
 const ROLE_LABELS = {
   ADMIN: "Admin",
@@ -33,6 +35,11 @@ export function AppNavbar() {
 
   const currentUser = currentUserQuery.data;
   const primaryRole = currentUser?.roles[0];
+
+  const navItems = [
+    ...baseNavItems,
+    ...(currentUser && canManageUsers(currentUser) ? adminNavItems : []),
+  ];
 
   if (pathname.startsWith("/login")) {
     return null;

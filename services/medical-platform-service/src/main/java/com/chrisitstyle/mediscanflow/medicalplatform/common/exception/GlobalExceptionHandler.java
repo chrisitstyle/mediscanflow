@@ -147,7 +147,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ApiErrorResponseDTO> handleHttpMessageNotReadable(
-            HttpMessageNotReadableException exception,
             HttpServletRequest request
     ) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
@@ -159,11 +158,11 @@ public class GlobalExceptionHandler {
                         "Malformed request body",
                         request.getRequestURI()
                 ));
+
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     ResponseEntity<ApiErrorResponseDTO> handleMaxUploadSizeExceeded(
-            MaxUploadSizeExceededException exception,
             HttpServletRequest request
     ) {
         HttpStatus status = HttpStatus.CONTENT_TOO_LARGE;
@@ -211,7 +210,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiErrorResponseDTO> handleGenericException(
-            Exception exception,
             HttpServletRequest request
     ) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
