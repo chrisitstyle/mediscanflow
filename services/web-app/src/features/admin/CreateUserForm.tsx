@@ -141,8 +141,9 @@ function CreateUserFormContent() {
         queryClient.invalidateQueries({
           queryKey: queryKeys.audit.recent(10),
         }),
+        queryClient.invalidateQueries({ queryKey: ["audit"] }),
         queryClient.invalidateQueries({
-          queryKey: ["audit"],
+          queryKey: queryKeys.users.all,
         }),
       ]);
 

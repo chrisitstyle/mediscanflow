@@ -36,6 +36,12 @@ export const queryKeys = {
     status: () => ["system", "status"] as const,
   },
 
+  users: {
+    all: ["users"] as const,
+    list: () => ["users", "list"] as const,
+    detail: (userId: string) => ["users", "detail", userId] as const,
+  },
+
   auth: {
     me: () => ["auth", "me"] as const,
   },

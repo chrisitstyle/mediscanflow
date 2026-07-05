@@ -14,13 +14,14 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
-import static com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole.*;
+import static com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole.ADMIN;
+import static com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole.DOCTOR;
+import static com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole.STAFF;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
-
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
@@ -36,70 +37,54 @@ public class SecurityConfig {
                                     "/actuator/health",
                                     "/actuator/health/**"
                             ).permitAll()
-
                             .requestMatchers(HttpMethod.GET, "/auth/me")
                             .authenticated()
-
                             .requestMatchers(HttpMethod.GET, "/system/status")
                             .hasRole(role(ADMIN))
-
                             .requestMatchers(HttpMethod.GET, "/dashboard/**")
                             .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
-
                             .requestMatchers(HttpMethod.GET, "/patients")
                             .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
-
                             .requestMatchers(HttpMethod.GET, "/patients/*")
                             .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
-
                             .requestMatchers(HttpMethod.GET, "/patients/*/analyses")
                             .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
-
                             .requestMatchers(HttpMethod.GET, "/patients/*/audit-events")
                             .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
-
                             .requestMatchers(HttpMethod.POST, "/patients")
                             .hasAnyRole(role(ADMIN), role(DOCTOR))
-
                             .requestMatchers(HttpMethod.PUT, "/patients/*/profile")
                             .hasAnyRole(role(ADMIN), role(DOCTOR))
-
                             .requestMatchers(HttpMethod.PATCH, "/patients/*/archive")
                             .hasAnyRole(role(ADMIN), role(DOCTOR))
-
                             .requestMatchers(HttpMethod.PATCH, "/patients/*/restore")
                             .hasAnyRole(role(ADMIN), role(DOCTOR))
-
                             .requestMatchers(HttpMethod.GET, "/analyses")
                             .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
-
                             .requestMatchers(HttpMethod.GET, "/analyses/recent")
                             .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
-
                             .requestMatchers(HttpMethod.GET, "/analyses/*")
                             .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
-
                             .requestMatchers(HttpMethod.GET, "/analyses/*/report")
                             .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
-
                             .requestMatchers(HttpMethod.GET, "/analyses/*/audit-events")
                             .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
-
                             .requestMatchers(HttpMethod.POST, "/patients/*/analyses")
                             .hasAnyRole(role(ADMIN), role(DOCTOR))
-
                             .requestMatchers(HttpMethod.POST, "/analyses/*/retry")
                             .hasAnyRole(role(ADMIN), role(DOCTOR))
-
                             .requestMatchers(HttpMethod.GET, "/audit-events")
                             .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
-
                             .requestMatchers(HttpMethod.GET, "/audit-events/recent")
                             .hasAnyRole(role(ADMIN), role(DOCTOR), role(STAFF))
-
+                            .requestMatchers(HttpMethod.GET, "/admin/users")
+                            .hasRole(role(ADMIN))
+                            .requestMatchers(HttpMethod.GET, "/admin/users/*")
+                            .hasRole(role(ADMIN))
                             .requestMatchers(HttpMethod.POST, "/admin/users")
                             .hasRole(role(ADMIN))
-
+                            .requestMatchers(HttpMethod.PATCH, "/admin/users/*/status")
+                            .hasRole(role(ADMIN))
                             .anyRequest()
                             .authenticated()
                     )
@@ -119,9 +104,7 @@ public class SecurityConfig {
     public JwtAuthenticationConverter jwtAuthenticationConverter(
             KeycloakJwtGrantedAuthoritiesConverter keycloakJwtGrantedAuthoritiesConverter
     ) {
-        JwtAuthenticationConverter authenticationConverter =
-                new JwtAuthenticationConverter();
-
+        JwtAuthenticationConverter authenticationConverter = new JwtAuthenticationConverter();
         authenticationConverter.setJwtGrantedAuthoritiesConverter(
                 keycloakJwtGrantedAuthoritiesConverter
         );
