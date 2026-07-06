@@ -3,6 +3,7 @@ package com.chrisitstyle.mediscanflow.medicalplatform.messaging.outbox;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.AnalysisEventPublisher;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisRequestedEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +12,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OutboxEventPublisher {
@@ -27,6 +29,12 @@ public class OutboxEventPublisher {
         List<OutboxEvent> events = outboxEventRepository
                 .findTop50ByStatusOrderByCreatedAtAsc(OutboxEventStatus.PENDING);
 
+        if (events.isEmpty()) {
+            return;
+        }
+
+        log.info("Publishing {} pending outbox event(s)", events.size());
+
         events.forEach(this::publish);
     }
 
@@ -35,10 +43,27 @@ public class OutboxEventPublisher {
             if (OutboxEventService.ANALYSIS_REQUESTED_EVENT.equals(outboxEvent.getEventType())) {
                 publishAnalysisRequestedEvent(outboxEvent);
                 outboxEvent.markPublished();
+
+                log.info(
+                        "Published outbox event id={} type={} aggregateId={}",
+                        outboxEvent.getId(),
+                        outboxEvent.getEventType(),
+                        outboxEvent.getAggregateId()
+                );
+
                 return;
             }
 
-            outboxEvent.markFailed("Unsupported outbox event type: " + outboxEvent.getEventType());
+            String errorMessage = "Unsupported outbox event type: " + outboxEvent.getEventType();
+            outboxEvent.markFailed(errorMessage);
+
+            log.warn(
+                    "Failed outbox event id={} type={} aggregateId={}: {}",
+                    outboxEvent.getId(),
+                    outboxEvent.getEventType(),
+                    outboxEvent.getAggregateId(),
+                    errorMessage
+            );
         } catch (RuntimeException exception) {
             markFailedOrRetry(outboxEvent, exception);
         }
@@ -66,6 +91,16 @@ public class OutboxEventPublisher {
 
     private void markFailedOrRetry(OutboxEvent outboxEvent, RuntimeException exception) {
         outboxEvent.markFailed(exception.getMessage());
+
+        log.warn(
+                "Failed to publish outbox event id={} type={} aggregateId={}; attempts={}/{}",
+                outboxEvent.getId(),
+                outboxEvent.getEventType(),
+                outboxEvent.getAggregateId(),
+                outboxEvent.getAttempts(),
+                MAX_ATTEMPTS,
+                exception
+        );
 
         if (outboxEvent.getAttempts() < MAX_ATTEMPTS) {
             outboxEvent.scheduleRetry();
