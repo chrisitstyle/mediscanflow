@@ -10,6 +10,14 @@ The project demonstrates a production-oriented approach to distributed system ar
 
 ---
 
+## 🎓 Project Origin
+
+The idea for MediScanFlow was inspired by my master's thesis project, which focused on medical image analysis and AI-assisted detection workflows.
+
+This repository expands that original concept into a broader distributed full-stack platform, adding patient management, authentication and authorization, asynchronous processing, object storage, PDF reporting, audit logging, dashboard views, and an administrative interface.
+
+The original thesis-related repository is available here: [msc-thesis](https://github.com/chrisitstyle/msc-thesis).
+
 ## 🌟 Key Features
 
 - **Full Web Application:** a modern web interface for managing patients, uploading scans, reviewing analysis history, and viewing AI-generated results.
