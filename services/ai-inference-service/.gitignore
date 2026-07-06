@@ -47,7 +47,6 @@ dist/
 models/*.pt
 models/*.onnx
 models/*.engine
-!models/.gitkeep
 
 # Local model/cache files
 .cache/
@@ -56,3 +55,7 @@ models/*.engine
 data/
 tmp/
 outputs/
+
+# Exceptions
+!models/.gitkeep
+!models/yolov8n-brain-tumor.pt
