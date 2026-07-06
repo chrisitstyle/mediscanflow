@@ -82,13 +82,14 @@ The project demonstrates a production-oriented approach to distributed system ar
 mediscanflow/
 ├── infra/
 │   ├── keycloak/
-│   │   ├── mediscanflow-realm-dev.json # dev profile (default in d-compose)
-│   │   └── mediscanflow-realm.json # prod profile (change )
+│   │   ├── mediscanflow-realm-dev.json  # development realm profile
+│   │   └── mediscanflow-realm.json      # production-like realm profile
 │   └── docker-compose.yml
-├──| services/
-   ├── medical-platform-service/    # Backend - Spring Boot
-   ├── ai-inference-service/        # AI Worker - Python + YOLO
-   └── web-app/                     # Frontend - Next.js
+├── services/
+│   ├── medical-platform-service/        # Backend - Spring Boot
+│   ├── ai-inference-service/            # AI Worker - Python + YOLO
+│   └── web-app/                         # Frontend - Next.js
+└── README.md
 ```
 
 ---
@@ -242,6 +243,8 @@ The local Keycloak realm import contains demo users for testing different permis
 
 > These credentials are intended for local development only.
 
+---
+
 ## 🛡 Roles and Permissions
 
 | Role     | Description                                                                |
@@ -249,6 +252,8 @@ The local Keycloak realm import contains demo users for testing different permis
 | `ADMIN`  | Full access, including user management and system status                   |
 | `DOCTOR` | Medical data write access, including patient and analysis actions          |
 | `STAFF`  | Read-only access to patients, analyses, dashboard, reports, and audit data |
+
+---
 
 High-level permission overview:
 
@@ -420,6 +425,8 @@ pnpm typecheck
 - The Next.js app proxies backend requests through `/api/backend/*`.
 - Keycloak realm definitions are stored under `infra/keycloak`.
 - Local credentials and client secrets are included only for development convenience.
+
+---
 
 ## 🔮 Roadmap (Planned Improvements)
 
