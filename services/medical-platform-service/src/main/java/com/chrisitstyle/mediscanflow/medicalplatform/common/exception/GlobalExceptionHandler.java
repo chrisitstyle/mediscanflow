@@ -86,7 +86,7 @@ public class GlobalExceptionHandler {
             SelfDisableNotAllowedException exception,
             HttpServletRequest request
     ) {
-        HttpStatus status = HttpStatus.BAD_REQUEST;
+        HttpStatus status = HttpStatus.CONFLICT;
 
         return ResponseEntity.status(status)
                 .body(ApiErrorResponseDTO.of(
