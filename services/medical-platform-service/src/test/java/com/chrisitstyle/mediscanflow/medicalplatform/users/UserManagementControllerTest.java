@@ -146,7 +146,7 @@ class UserManagementControllerTest {
     }
 
     @Test
-    void updateUserStatusReturnsBadRequestWhenAdminDisablesSelf() throws Exception {
+    void updateUserStatusReturnsConflictWhenAdminDisablesSelf() throws Exception {
         when(userManagementService.updateUserStatus(
                 eq(ADMIN_ID),
                 any(UpdateUserStatusRequestDTO.class)
@@ -160,7 +160,7 @@ class UserManagementControllerTest {
                                   "status": "Disabled"
                                 }
                                 """))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Admin cannot disable their own account."));
 
         verify(userManagementService)
