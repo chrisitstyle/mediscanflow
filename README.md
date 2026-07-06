@@ -32,7 +32,7 @@ The original thesis-related repository is available here: [msc-thesis](https://g
 
 - **Asynchronous Processing Workflow:** separation of request handling from heavy AI inference using **RabbitMQ** messaging.
 
-- **AI-Powered Detection:** python-based inference worker using YOLOv8n, Ultralytics, and OpenCV for medical image object detection.
+- **AI-Powered Detection:** python-based inference worker using YOLOv8n, Ultralytics, and OpenCV for medical image object detection across four classes: `glioma`, `meningioma`, `pituitary`, and `no tumor`.
 
 - **S3-Compatible Object Storage:** storage of original scans and processed diagnostic images in `MinIO`, with temporary access through presigned URLs.
 
@@ -47,6 +47,27 @@ The original thesis-related repository is available here: [msc-thesis](https://g
 - **Admin User Management:** user listing, creation, enabling, and disabling through the admin panel.
 
 - **System Status View:** infrastructure component status available for administrators.
+
+---
+
+## 🧬 Detection Classes
+
+The AI inference worker performs brain scan classification and detection using four supported classes:
+
+| Class        | Description            |
+| :----------- | :--------------------- |
+| `glioma`     | Glioma tumor class     |
+| `meningioma` | Meningioma tumor class |
+| `pituitary`  | Pituitary tumor class  |
+| `no tumor`   | No tumor detected      |
+
+<p align="center">
+  <img src="docs/images/detected_all_classes.png" alt="Example detection results for glioma, meningioma, pituitary and no tumor classes" width="500"/>
+</p>
+
+<p align="center">
+  <sub><strong>Figure 1.</strong> Example AI inference results across all supported classes.</sub>
+</p>
 
 ---
 
