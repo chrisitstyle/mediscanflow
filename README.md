@@ -62,6 +62,9 @@ The project demonstrates a production-oriented approach to distributed system ar
 - Next.js
 - React
 - TailwindCSS
+- shadcn/ui
+- Radix UI
+- TanStack Query
 
 ### AI Worker - Inference Service
 
@@ -69,9 +72,15 @@ The project demonstrates a production-oriented approach to distributed system ar
 - Ultralytics framework with YOLOv8 model
 - Pika (RabbitMQ client) & MinIO Python SDK
 
-### Infrastructure & Security
+### Infrastructure
 
-- Docker
+- Docker Compose
+- PostgreSQL
+- RabbitMQ
+- MinIO
+
+### Security
+
 - Keycloak
 
 ---
