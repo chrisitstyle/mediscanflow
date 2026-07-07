@@ -1,508 +1,479 @@
 # MediScanFlow
 
-MediScanFlow is a distributed medical image analysis platform built as a portfolio project.
+MediScanFlow is a distributed medical image analysis platform built as an advanced portfolio project.
 
-It allows users to create patients, upload medical scan images, process them asynchronously with an AI inference worker, and retrieve analysis results with detected regions highlighted on an annotated image.
+It allows for comprehensive patient management, secure upload of medical scans, fully asynchronous processing using a dedicated AI inference worker (based on the YOLOv8 model), and convenient viewing of detection results directly in the web application, with pathological regions highlighted on the generated result image.
 
-The project demonstrates a production-oriented backend architecture using Spring Boot, PostgreSQL, RabbitMQ, MinIO, Docker Compose, and a Python-based YOLO inference service.
+The project demonstrates a production-oriented approach to distributed system architecture, emphasizing security, reliable asynchronous communication, data consistency, and local development automation.
 
----
-
-## Features
-
-- Patient management
-- Medical scan upload
-- Asynchronous image analysis workflow
-- RabbitMQ-based communication between backend and AI worker
-- MinIO object storage for original and processed images
-- YOLOv8n-based brain tumor detection worker
-- Analysis status tracking
-- Detection results with bounding boxes and confidence scores
-- Annotated result image generation
-- Presigned URLs for image access
-- Global API error handling
-- File upload validation
-- Fully containerized local development environment
+> **Disclaimer**: MediScanFlow is a demonstration and portfolio project. It is not a certified medical device and must not be used for real clinical diagnosis.
 
 ---
 
-## Tech Stack
+## 🎓 Project Origin
 
-### Backend
+The idea for MediScanFlow was inspired by my master's thesis project, which focused on medical image analysis and AI-assisted detection workflows.
+
+This repository expands that original concept into a broader distributed full-stack platform, adding patient management, authentication and authorization, asynchronous processing, object storage, PDF reporting, audit logging, dashboard views, and an administrative interface.
+
+The original thesis-related repository is available here: [msc-thesis](https://github.com/chrisitstyle/msc-thesis).
+
+## 🌟 Key Features
+
+- **Full Web Application:** a modern web interface for managing patients, uploading scans, reviewing analysis history, and viewing AI-generated results.
+
+- **Authentication and Authorization:** centralized identity and access management using Keycloak with OAuth2/OIDC and Bearer JWT-secured API requests.
+
+- **Role-Based Access Control:** separate permissions for `ADMIN`, `DOCTOR`, and `STAFF` users.
+
+- **Patient Management:** creating, updating, archiving, restoring, and searching patient records.
+
+- **Medical Scan Upload:** upload support for `JPEG` and `PNG` files with backend validation.
+
+- **Asynchronous Processing Workflow:** separation of request handling from heavy AI inference using **RabbitMQ** messaging.
+
+- **AI-Powered Detection:** python-based inference worker using YOLOv8n, Ultralytics, and OpenCV for medical image object detection across four classes: `glioma`, `meningioma`, `pituitary`, and `no tumor`.
+
+- **S3-Compatible Object Storage:** storage of original scans and processed diagnostic images in `MinIO`, with temporary access through presigned URLs.
+
+- **Analysis Results:** detection metadata including bounding boxes, confidence scores, and annotated result images.
+
+- **PDF Reports:** downloadable PDF reports generated for completed analyses.
+
+- **Dashboard:** overview of analysis statistics, recent activity, and platform state.
+
+- **Audit Logging:** tracking of important domain and administrative actions.
+
+- **Admin User Management:** user listing, creation, enabling, and disabling through the admin panel.
+
+- **System Status View:** infrastructure component status available for administrators.
+
+---
+
+## 🧬 Detection Classes
+
+The AI inference worker performs brain scan classification and detection using four supported classes:
+
+| Class        | Description            |
+| :----------- | :--------------------- |
+| `glioma`     | Glioma tumor class     |
+| `meningioma` | Meningioma tumor class |
+| `pituitary`  | Pituitary tumor class  |
+| `no tumor`   | No tumor detected      |
+
+<p align="center">
+  <img src="docs/images/detected_all_classes.png" alt="Example detection results for glioma, meningioma, pituitary and no tumor classes" width="500"/>
+</p>
+
+<p align="center">
+  <sub><strong>Figure 1.</strong> Example AI inference results across all supported classes.</sub>
+</p>
+
+---
+
+## 🏗 Tech Stack
+
+### Backend - Platform Service
 
 - Java 25
 - Spring Boot 4.1.0
-- Spring Web MVC
-- Spring Data JPA
-- Spring AMQP
-- Flyway
+- Spring Web MVC & Spring Data JPA
+- Spring AMQP (RabbitMQ)
 - PostgreSQL
+- Flyway
 - MinIO Java SDK
+- OpenPDF
 - Gradle
 
-### AI Worker
+### Web Application - Frontend
 
-- Python
-- Ultralytics YOLO
-- OpenCV
-- Pika
-- MinIO Python SDK
+- TypeScript
+- Next.js
+- React
+- TailwindCSS
+- shadcn/ui
+- Radix UI
+- TanStack Query
+
+### AI Worker - Inference Service
+
+- Python 3.12+
+- Ultralytics framework with YOLOv8 model
+- Pika (RabbitMQ client) & MinIO Python SDK
 
 ### Infrastructure
 
-- Docker
 - Docker Compose
 - PostgreSQL
-- RabbitMQ Management
+- RabbitMQ
 - MinIO
+
+### Security
+
+- Keycloak
 
 ---
 
-## Repository Structure
+## 📂 Repository Structure
 
 ```text
 mediscanflow/
-├── docs/
-│   └── architecture.md
 ├── infra/
+│   ├── keycloak/
+│   │   ├── mediscanflow-realm-dev.json  # development realm profile
+│   │   └── mediscanflow-realm.json      # production-like realm profile
 │   └── docker-compose.yml
 ├── services/
-│   ├── medical-platform-service/
-│   │   ├── src/
-│   │   ├── build.gradle
-│   │   └── Dockerfile
-│   └── ai-inference-service/
-│       ├── app/
-│       ├── models/
-│       │   └── .gitkeep
-│       ├── requirements.txt
-│       └── Dockerfile
+│   ├── medical-platform-service/        # Backend - Spring Boot
+│   ├── ai-inference-service/            # AI Worker - Python + YOLO
+│   └── web-app/                         # Frontend - Next.js
 └── README.md
 ```
 
 ---
 
-## Main Services
+## 🧠 Architecture Overview
 
-### `medical-platform-service`
+```text
+Browser
+  |
+  | Next.js web application
+  v
+Web App
+  |
+  | REST API requests with JWT access token
+  v
+Spring Boot Backend
+  |
+  +--> PostgreSQL
+  |     stores patients, analyses, audit logs, and outbox events
+  |
+  +--> MinIO
+  |     stores original and processed medical images
+  |
+  +--> RabbitMQ
+        publishes analysis requests through the outbox publisher
+        consumes completed or failed analysis events
 
-Spring Boot backend responsible for:
+RabbitMQ
+  |
+  | analysis.requested
+  v
+Python AI Worker
+  |
+  +--> MinIO
+  |     downloads original image and uploads annotated result image
+  |
+  +--> RabbitMQ
+        publishes analysis.completed or analysis.failed
+```
 
-- exposing REST API endpoints,
-- managing patients and analyses,
-- storing metadata in PostgreSQL,
-- uploading files to MinIO,
-- publishing analysis requests to RabbitMQ,
-- consuming completed and failed analysis events,
-- returning analysis results and presigned image URLs.
+## ⚙️ Services
 
-### `ai-inference-service`
+The `web-app` service is a Next.js frontend responsible for:
 
-Python worker responsible for:
+- handling the Keycloak login and logout flow
+- protecting application routes
+- displaying the dashboard
+- managing patient records
+- uploading medical scans
+- displaying analysis details and AI-generated results
+- downloading generated PDF reports
+- displaying audit activity
+- providing an admin user-management interface
+- showing system status information for administrators
 
-- consuming analysis request events from RabbitMQ,
-- downloading uploaded images from MinIO,
-- running YOLOv8n inference,
-- generating annotated result images,
-- uploading result images back to MinIO,
-- publishing completed or failed events.
+### Medical Platform Service
 
----
+The `medical-platform-service` is a Spring Boot backend responsible for:
 
-## Local Development
+- exposing REST API endpoints
+- validating requests and uploaded files
+- enforcing role-based authorization
+- managing patients and analyses
+- storing metadata in PostgreSQL
+- storing medical images in MinIO
+- publishing analysis requests through the Transactional Outbox pattern
+- consuming completed and failed analysis events
+- generating PDF reports
+- recording audit events
+- integrating with Keycloak Admin API for user management
+
+### AI Inference Service
+
+The `ai-inference-service` is a Python worker responsible for:
+
+- consuming `analysis.requested` messages from RabbitMQ
+- downloading scan images from MinIO
+- running YOLO-based inference
+- generating annotated result images
+- uploading processed images back to MinIO
+- publishing `analysis.completed` or `analysis.failed` events
+
+## 🚀 Running the System - local development
+
+The entire environment is fully containerized, and spinning it up requires just a few steps.
 
 ### Prerequisites
 
-Required:
-
 - Docker
-- Docker Compose
 - Git
 
-Optional for local development outside Docker:
+### 1. Starting the Containers
 
-- Java 25
-- Python 3.12+
-- Gradle
-
----
-
-## Model File
-
-The YOLO model weights are not committed to the repository.
-
-Place the model file here:
-
-```text
-services/ai-inference-service/models/yolov8n-brain-tumor.pt
-```
-
-Expected model path inside the worker container:
-
-```text
-models/yolov8n-brain-tumor.pt
-```
-
----
-
-## Running the System
-
-From the repository root:
+From the main project directory (root), execute the command to build and start all containers in the background:
 
 ```bash
 docker compose -f infra/docker-compose.yml up -d --build
 ```
 
-Check containers:
+### 2. Monitoring and Checking System Status
+
+To verify the status of running services, view logs, or safely shut down the environment, use the following commands:
 
 ```bash
+# check the status of containers and health checks
 docker compose -f infra/docker-compose.yml ps
-```
 
-Check backend logs:
+# follow web application logs
+docker logs -f mediscanflow-web-app
 
-```bash
+# follow Spring Boot backend logs
 docker logs -f mediscanflow-medical-platform-service
-```
 
-Check worker logs:
-
-```bash
+# follow AI worker logs
 docker logs -f mediscanflow-ai-inference-service
-```
 
-Stop the system:
-
-```bash
+# stop the entire system
 docker compose -f infra/docker-compose.yml down
-```
 
-Stop and remove volumes:
-
-```bash
+# stop the system and clean up data volumes (database, S3, etc.)
 docker compose -f infra/docker-compose.yml down -v
 ```
 
 ---
 
-## Local URLs
+## 🌍 Available Endpoints and Credentials
 
-| Service             | URL                                         |
-| ------------------- | ------------------------------------------- |
-| Backend API         | `http://localhost:8080/api`                 |
-| Backend health      | `http://localhost:8080/api/actuator/health` |
-| RabbitMQ Management | `http://localhost:15672`                    |
-| MinIO Console       | `http://localhost:9001`                     |
-| MinIO API           | `http://localhost:9000`                     |
+After successful startup, the services are available at the following local URLs:
 
-Default RabbitMQ credentials:
-
-```text
-username: mediscanflow
-password: mediscanflow
-```
-
-Default MinIO credentials:
-
-```text
-username: mediscanflow
-password: mediscanflow123
-```
+|      Service / Application      |                     URL                     |           Development Credentials            |
+| :-----------------------------: | :-----------------------------------------: | :------------------------------------------: |
+|       **Web Application**       |           `http://localhost:3000`           |      Use one of the demo Keycloak users      |
+|         **Backend API**         |         `http://localhost:8080/api`         | Requires `Authorization: Bearer <jwt_token>` |
+|       **Backend Health**        | `http://localhost:8080/api/actuator/health` |                      -                       |
+|   **Keycloak Admin Console**    |           `http://localhost:8081`           |              `admin` / `admin`               |
+| **RabbitMQ Management Console** |          `http://localhost:15672`           |       `mediscanflow` / `mediscanflow`        |
+|        **MinIO Console**        |           `http://localhost:9001`           |      `mediscanflow` / `mediscanflow123`      |
+|     **MinIO API Endpoint**      |           `http://localhost:9000`           |  Used internally by S3-compatible services   |
 
 ---
 
-## API Endpoints
+## 🔐 Demo Users
 
-### Patients
+The local Keycloak realm import contains demo users for testing different permission levels.
 
-Create patient:
+|  Role  |           Email           |   Password   |
+| :----: | :-----------------------: | :----------: |
+| Admin  | `admin@mediscanflow.com`  | `Admin123!`  |
+| Doctor | `doctor@mediscanflow.com` | `Doctor123!` |
+| Staff  | `staff@mediscanflow.com`  | `Staff123!`  |
 
-```http
-POST /api/patients
-```
-
-Example request:
-
-```json
-{
-  "firstName": "John",
-  "lastName": "Doe",
-  "dateOfBirth": "1990-01-15",
-  "medicalRecordNumber": "MRN-0001"
-}
-```
-
-List patients:
-
-```http
-GET /api/patients
-```
-
-Get patient by ID:
-
-```http
-GET /api/patients/{id}
-```
+> These credentials are intended for local development only.
 
 ---
 
-### Analyses
+## 🛡 Roles and Permissions
 
-Upload scan for patient:
-
-```http
-POST /api/patients/{patientId}/analyses
-```
-
-Request type:
-
-```text
-multipart/form-data
-```
-
-Required field:
-
-```text
-file
-```
-
-Optional parameters:
-
-```text
-modelName
-modelVersion
-```
-
-Default model metadata:
-
-```text
-modelName: yolo-brain-tumor-detector
-modelVersion: yolov8n
-```
-
-Get analysis by ID:
-
-```http
-GET /api/analyses/{id}
-```
-
-List analyses for patient:
-
-```http
-GET /api/patients/{patientId}/analyses
-```
+| Role     | Description                                                                |
+| :------- | :------------------------------------------------------------------------- |
+| `ADMIN`  | Full access, including user management and system status                   |
+| `DOCTOR` | Medical data write access, including patient and analysis actions          |
+| `STAFF`  | Read-only access to patients, analyses, dashboard, reports, and audit data |
 
 ---
 
-## Analysis Statuses
+High-level permission overview:
 
-| Status       | Description                                 |
-| ------------ | ------------------------------------------- |
-| `UPLOADED`   | Scan was uploaded but not yet queued.       |
-| `QUEUED`     | Analysis request was published to RabbitMQ. |
-| `PROCESSING` | Reserved for future processing state.       |
-| `COMPLETED`  | AI inference completed successfully.        |
-| `FAILED`     | AI inference failed.                        |
+| Area                         | Admin | Doctor | Staff |
+| :--------------------------- | :---: | :----: | :---: |
+| Dashboard                    |  yes  |  yes   |  yes  |
+| View patients                |  yes  |  yes   |  yes  |
+| Create patients              |  yes  |  yes   |  no   |
+| Update patients              |  yes  |  yes   |  no   |
+| Archive and restore patients |  yes  |  yes   |  no   |
+| Upload scans                 |  yes  |  yes   |  no   |
+| View analyses                |  yes  |  yes   |  yes  |
+| Retry failed analyses        |  yes  |  yes   |  no   |
+| Download PDF reports         |  yes  |  yes   |  yes  |
+| View audit logs              |  yes  |  yes   |  yes  |
+| Manage users                 |  yes  |   no   |  no   |
+| View system status           |  yes  |   no   |  no   |
 
-Currently, uploaded analyses are moved directly to `QUEUED`, and then to either `COMPLETED` or `FAILED`.
+## 📊 Analysis Lifecycle Model
 
----
+The analysis workflow is represented using status values that make it possible to track progress from the web application.
 
-## Example Analysis Response
-
-```json
-{
-  "id": "4a5b2b52-f54c-4d2f-92fb-4b09c8341f7a",
-  "patientId": "51e822a2-6c21-46cb-9f41-2209352c9b1a",
-  "status": "COMPLETED",
-  "originalFileName": "scan.jpg",
-  "objectKey": "analyses/4a5b2b52-f54c-4d2f-92fb-4b09c8341f7a/scan.jpg",
-  "resultObjectKey": "analyses/4a5b2b52-f54c-4d2f-92fb-4b09c8341f7a/result.jpg",
-  "originalImageUrl": "http://localhost:9000/...",
-  "resultImageUrl": "http://localhost:9000/...",
-  "contentType": "image/jpeg",
-  "fileSizeBytes": 123456,
-  "modelName": "yolo-brain-tumor-detector",
-  "modelVersion": "yolov8n",
-  "errorMessage": null,
-  "createdAt": "2026-06-30T16:20:00Z",
-  "completedAt": "2026-06-30T16:20:10Z",
-  "detections": [
-    {
-      "label": "Glioma",
-      "confidence": 0.8913,
-      "x": 120.5,
-      "y": 80.0,
-      "width": 64.2,
-      "height": 58.7
-    }
-  ]
-}
-```
+| Status       | Description                                                                                                     |
+| :----------- | :-------------------------------------------------------------------------------------------------------------- |
+| `UPLOADED`   | The medical image has been uploaded and saved; the analysis request is waiting to be published from the outbox  |
+| `QUEUED`     | The analysis request has been published to RabbitMQ and is waiting to be processed by an AI worker              |
+| `PROCESSING` | Reserved status for the stage where the AI service is actively processing the scan                              |
+| `COMPLETED`  | The inference completed successfully; the annotated image, detection metadata, and confidence scores were saved |
+| `FAILED`     | Processing failed because of an error during image decoding, inference, storage access, or event handling       |
 
 ---
 
-## Error Response Format
+## 🛡 Validation and Error Handling Standards
 
-The backend returns a consistent error response format:
+The backend provides a consistent error structure for REST API clients (the returned JSON format includes `timestamp`, `status`, `error`, `message`, `path`, and a `validationErrors` map).
 
-```json
-{
-  "timestamp": "2026-06-30T16:20:00Z",
-  "status": 404,
-  "error": "Not Found",
-  "message": "Patient not found",
-  "path": "/api/patients/00000000-0000-0000-0000-000000000000",
-  "validationErrors": {}
-}
-```
-
-Validation errors include field-level details:
-
-```json
-{
-  "timestamp": "2026-06-30T16:20:00Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Validation failed",
-  "path": "/api/patients",
-  "validationErrors": {
-    "firstName": "must not be blank",
-    "lastName": "must not be blank"
-  }
-}
-```
+| Test Case             | Returned HTTP Status    | Description                                                               |
+| :-------------------- | :---------------------- | :------------------------------------------------------------------------ |
+| Missing or empty file | `400 Bad Request`       | Attempted to submit an empty form.                                        |
+| Unsupported format    | `400 Bad Request`       | MIME type other than `image/jpeg` or `image/png`.                         |
+| File too large        | `413 Payload Too Large` | Single scan size exceeds the strict limit of **10 MB**.                   |
+| Non-existent patient  | `404 Not Found`         | Attempt to link an analysis to an ID that does not exist in the database. |
 
 ---
 
-## File Upload Validation
+## 📨 RabbitMQ Messaging
 
-Allowed content types:
+The backend and AI worker communicate through the `mediscanflow.analysis` direct exchange.
+
+**Queues:**
 
 ```text
-image/jpeg
-image/png
+analysis.requested
+analysis.completed
+analysis.failed
 ```
 
-Maximum upload size:
+**Routing keys:**
 
 ```text
-10 MB
+analysis.requested
+analysis.completed
+analysis.failed
 ```
 
-Invalid uploads return proper API errors:
+**Workflow:**
 
-| Case                     | Status                  |
-| ------------------------ | ----------------------- |
-| Missing file             | `400 Bad Request`       |
-| Empty file               | `400 Bad Request`       |
-| Unsupported content type | `400 Bad Request`       |
-| File too large           | `413 Payload Too Large` |
+1. The backend receives a scan upload request.
+2. The original image is stored in MinIO.
+3. Analysis metadata is stored in PostgreSQL.
+4. An analysis request event is saved in the outbox table in the same transaction.
+5. The scheduled outbox publisher reads pending events and publishes them to RabbitMQ.
+6. The AI worker consumes the analysis request.
+7. The worker downloads the original image from MinIO.
+8. The worker runs YOLO inference and generates detection results.
+9. The worker uploads the annotated image back to MinIO.
+10. The worker publishes either a completed or failed event.
+11. The backend consumes the result event and updates the analysis status.
 
 ---
 
-## Event Flow
+## ⚙️ Configuration
+
+The **Docker Compose** setup provides local development defaults through environment variables.
+
+Common backend configuration:
 
 ```text
-Client
-  |
-  | POST /api/patients/{patientId}/analyses
-  v
-Spring Boot Backend
-  |
-  | Upload original image
-  v
-MinIO
-  |
-  | Publish AnalysisRequestedEvent
-  v
-RabbitMQ
-  |
-  | Consume event
-  v
-Python AI Worker
-  |
-  | Download image from MinIO
-  | Run YOLO inference
-  | Upload annotated image
-  v
-MinIO
-  |
-  | Publish AnalysisCompletedEvent or AnalysisFailedEvent
-  v
-RabbitMQ
-  |
-  | Consume result event
-  v
-Spring Boot Backend
-  |
-  | Update analysis status and detections
-  v
-PostgreSQL
-```
-
----
-
-## Configuration
-
-The backend uses environment variables in Docker Compose for service-to-service communication:
-
-```text
+SPRING_PROFILES_ACTIVE=dev
 SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mediscanflow
 SPRING_RABBITMQ_HOST=rabbitmq
 APP_STORAGE_MINIO_ENDPOINT=http://minio:9000
 APP_STORAGE_MINIO_PUBLIC_ENDPOINT=http://localhost:9000
+SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8081/realms/mediscanflow
+SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/mediscanflow/protocol/openid-connect/certs
 ```
 
-The AI worker uses:
+Common web application configuration:
+
+```text
+NEXT_PUBLIC_API_BASE_URL=/api/backend
+BACKEND_INTERNAL_URL=http://medical-platform-service:8080/api
+NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8081
+NEXT_PUBLIC_KEYCLOAK_REALM=mediscanflow
+NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=mediscanflow-web
+```
+
+Common AI worker configuration:
 
 ```text
 RABBITMQ_HOST=rabbitmq
 MINIO_ENDPOINT=minio:9000
+MINIO_BUCKET=medical-scans
 MODEL_PATH=models/yolov8n-brain-tumor.pt
 YOLO_CONFIDENCE_THRESHOLD=0.25
+SIMULATE_INFERENCE_FAILURE=false
 ```
 
 ---
 
-## Development Notes
+## 🧪 Running Services Locally Without Docker
 
-The project intentionally uses a simple modular structure instead of over-engineered domain layering.
+### Backend
 
-Backend packages are organized by feature:
+From the repository root:
 
-```text
-patients/
-analyses/
-storage/
-messaging/
-common/
+```bash
+make backend-dev
 ```
 
-DTO classes use the `DTO` suffix.
+Or manually:
 
-RabbitMQ event contracts do not use the `DTO` suffix because they represent messaging contracts rather than REST API DTOs.
+```bash
+cd services/medical-platform-service
+SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun
+```
+
+Run backend tests:
+
+```bash
+make backend-test
+```
+
+### Web Application
+
+```bash
+cd services/web-app
+pnpm install
+pnpm next dev
+```
+
+Useful commands:
+
+```bash
+pnpm next build
+pnpm start
+pnpm lint
+pnpm typecheck
+```
 
 ---
 
-## Current Limitations
+## 📝 Development Notes
 
-- No authentication or authorization yet.
-- No frontend yet.
-- No OpenAPI documentation yet.
-- No Testcontainers integration tests yet.
-- No production deployment manifests yet.
-- AI model weights are handled manually and are not stored in Git.
+- Backend code is organized by feature.
+- REST API DTOs use the `DTO` suffix.
+- Messaging event contracts do not use the `DTO` suffix because they represent integration event contracts.
+- The frontend uses feature-based folders under `src/features`.
+- The Next.js app proxies backend requests through `/api/backend/*`.
+- Keycloak realm definitions are stored under `infra/keycloak`.
+- Local credentials and client secrets are included only for development convenience.
 
 ---
 
-## Planned Improvements
+## 🔮 Roadmap (Planned Improvements)
 
-- Frontend web application
-- Authentication and authorization
-- OpenAPI documentation
-- Integration tests with Testcontainers
-- Transactional Outbox pattern
-- Better AI model versioning
-- DICOM support
-- Cloud deployment configuration
+The project is developing iteratively. Upcoming milestones include:
+
+1. **Full Support for DICOM Files** - implementing parsing for the native format used in medical diagnostic equipment (X-ray, CT, MRI) instead of standard consumer images.
+
+2. **OpenAPI / Swagger Documentation** - integration with Springdoc-openapi to automatically generate and visualize interactive documentation for backend API endpoints.
+
+3. **Testcontainers Integration Tests** - automating integration tests in the CI pipeline using the Testcontainers library (automatically spinning up PostgreSQL and RabbitMQ instances for testing).
+
+4. **Observability Improvements** - enhanced logs, health checks, metrics, and monitoring readiness.
