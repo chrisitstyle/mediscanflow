@@ -47,20 +47,19 @@ export function AppNavbar() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
-  // close the mobile menu whenever the route changes.
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
+  const closeMobileMenu = () => setMobileOpen(false);
 
   // lock body scroll and close on Escape while the mobile menu is open.
   useEffect(() => {
     if (!mobileOpen) return;
+
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMobileOpen(false);
+      if (event.key === "Escape") closeMobileMenu();
     };
+
     document.addEventListener("keydown", onKeyDown);
 
     return () => {
@@ -79,6 +78,7 @@ export function AppNavbar() {
         <div className="flex min-w-0 items-center gap-4 lg:gap-8">
           <Link
             href="/"
+            onClick={closeMobileMenu}
             className="group flex min-w-0 items-center gap-2.5 transition-opacity hover:opacity-90"
           >
             <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/25 ring-1 ring-inset ring-primary/20 transition-transform group-hover:scale-105">
@@ -191,7 +191,7 @@ export function AppNavbar() {
           <button
             type="button"
             aria-label="Close menu"
-            onClick={() => setMobileOpen(false)}
+            onClick={closeMobileMenu}
             className="fixed inset-0 top-16 z-40 bg-foreground/20 backdrop-blur-sm"
           />
 
@@ -207,6 +207,7 @@ export function AppNavbar() {
                   <div className="truncate text-sm font-medium">
                     {currentUser.firstName} {currentUser.lastName}
                   </div>
+
                   <div className="truncate text-xs text-muted-foreground">
                     {currentUser.email}
                   </div>
@@ -229,7 +230,7 @@ export function AppNavbar() {
                   <Link
                     href={item.href}
                     aria-current={isActive(item.href) ? "page" : undefined}
-                    onClick={() => setMobileOpen(false)}
+                    onClick={closeMobileMenu}
                     className={cn(
                       "block rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
                       isActive(item.href) &&
@@ -247,7 +248,7 @@ export function AppNavbar() {
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  setMobileOpen(false);
+                  closeMobileMenu();
                   void logout();
                 }}
                 className="mt-4 w-full justify-start gap-2"
