@@ -4,6 +4,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -34,6 +35,14 @@ const STATUS_LABELS: Record<AnalysisStatus, string> = {
   FAILED: "Failed",
 };
 
+const ANALYSIS_STATUS_CHART_COLORS: Record<AnalysisStatus, string> = {
+  UPLOADED: "var(--chart-4)",
+  QUEUED: "var(--chart-5)",
+  PROCESSING: "var(--chart-2)",
+  COMPLETED: "var(--chart-1)",
+  FAILED: "var(--chart-3)",
+};
+
 export function AnalysisStatusChartCard() {
   const statusQuery = useQuery({
     queryKey: queryKeys.dashboard.analysisStatusBreakdown(),
@@ -47,6 +56,7 @@ export function AnalysisStatusChartCard() {
 
   const chartData =
     statusQuery.data?.map((item) => ({
+      statusKey: item.status,
       status: STATUS_LABELS[item.status],
       count: item.count,
     })) ?? [];
@@ -87,29 +97,63 @@ export function AnalysisStatusChartCard() {
                   bottom: 0,
                 }}
               >
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <CartesianGrid
+                  vertical={false}
+                  stroke="var(--border)"
+                  strokeDasharray="3 3"
+                />
+
                 <XAxis
                   dataKey="status"
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 12 }}
+                  tick={{
+                    fill: "var(--muted-foreground)",
+                    fontSize: 12,
+                  }}
                 />
+
                 <YAxis
                   allowDecimals={false}
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 12 }}
+                  tick={{
+                    fill: "var(--muted-foreground)",
+                    fontSize: 12,
+                  }}
                   domain={[0, (dataMax: number) => Math.max(1, dataMax)]}
                 />
-                <Tooltip />
-                <Bar
-                  dataKey="count"
-                  name="Analyses"
-                  fill="var(--primary)"
-                  radius={[6, 6, 0, 0]}
+
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "var(--popover)",
+                    borderColor: "var(--border)",
+                    color: "var(--popover-foreground)",
+                    borderRadius: "0.75rem",
+                    boxShadow: "var(--shadow-lg)",
+                  }}
+                  labelStyle={{
+                    color: "var(--popover-foreground)",
+                    fontWeight: 600,
+                  }}
+                  itemStyle={{
+                    color: "var(--muted-foreground)",
+                  }}
+                  cursor={{
+                    fill: "var(--muted)",
+                  }}
                 />
+
+                <Bar dataKey="count" name="Analyses" radius={[6, 6, 0, 0]}>
+                  {chartData.map((entry) => (
+                    <Cell
+                      key={entry.statusKey}
+                      fill={ANALYSIS_STATUS_CHART_COLORS[entry.statusKey]}
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

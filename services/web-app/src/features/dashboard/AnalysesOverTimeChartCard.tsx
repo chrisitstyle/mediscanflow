@@ -93,35 +93,72 @@ export function AnalysesOverTimeChartCard({
                   bottom: 0,
                 }}
               >
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <CartesianGrid
+                  vertical={false}
+                  stroke="var(--border)"
+                  strokeDasharray="3 3"
+                />
+
                 <XAxis
                   dataKey="date"
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 12 }}
+                  tick={{
+                    fill: "var(--muted-foreground)",
+                    fontSize: 12,
+                  }}
                 />
+
                 <YAxis
                   allowDecimals={false}
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 12 }}
+                  tick={{
+                    fill: "var(--muted-foreground)",
+                    fontSize: 12,
+                  }}
                   domain={[0, (dataMax: number) => Math.max(1, dataMax)]}
                 />
-                <Tooltip />
+
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "var(--popover)",
+                    borderColor: "var(--border)",
+                    color: "var(--popover-foreground)",
+                    borderRadius: "0.75rem",
+                    boxShadow: "var(--shadow-lg)",
+                  }}
+                  labelStyle={{
+                    color: "var(--popover-foreground)",
+                    fontWeight: 600,
+                  }}
+                  itemStyle={{
+                    color: "var(--muted-foreground)",
+                  }}
+                  cursor={{
+                    stroke: "var(--border)",
+                  }}
+                />
+
                 <Line
                   type="monotone"
                   dataKey="count"
                   name="Analyses"
-                  stroke="var(--primary)"
+                  stroke="var(--chart-4)"
                   strokeWidth={2}
                   dot={{
                     r: 3,
-                    fill: "var(--primary)",
+                    fill: "var(--background)",
+                    stroke: "var(--chart-4)",
+                    strokeWidth: 2,
                   }}
                   activeDot={{
                     r: 5,
+                    fill: "var(--chart-4)",
+                    stroke: "var(--background)",
+                    strokeWidth: 2,
                   }}
                 />
               </LineChart>
