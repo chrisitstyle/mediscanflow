@@ -6,7 +6,9 @@ export type AuditEventType =
   | "ANALYSIS_UPLOADED"
   | "ANALYSIS_RETRIED"
   | "REPORT_DOWNLOADED"
-  | "USER_CREATED";
+  | "USER_CREATED"
+  | "USER_ENABLED"
+  | "USER_DISABLED";
 
 export type AuditEvent = {
   id: string;

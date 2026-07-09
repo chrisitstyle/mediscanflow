@@ -1,23 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Activity,
-  Archive,
-  Download,
-  FileText,
-  RefreshCcw,
-  RotateCcw,
-  UploadCloud,
-  UserCog,
-  UserPlus,
-  UserRoundPen,
-} from "lucide-react";
+import { Activity, FileText } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { getAuditEventsPage } from "@/api/auditApi";
 import { EmptyState } from "@/components/EmptyState";
+import { AuditEventIcon } from "@/features/audit/AuditEventIcon";
+import { AUDIT_EVENT_LABELS } from "@/features/audit/auditEventPresentation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,22 +21,11 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError } from "@/lib/apiClient";
-import { queryKeys } from "@/lib/queryKeys";
 import { formatDateTime } from "@/lib/formatters";
-import type { AuditEvent, AuditEventType } from "@/types/audit";
+import { queryKeys } from "@/lib/queryKeys";
+import type { AuditEvent } from "@/types/audit";
 
 const PAGE_SIZE = 50;
-
-const AUDIT_EVENT_LABELS: Record<AuditEventType, string> = {
-  PATIENT_CREATED: "Patient created",
-  PATIENT_PROFILE_UPDATED: "Patient updated",
-  PATIENT_ARCHIVED: "Patient archived",
-  PATIENT_RESTORED: "Patient restored",
-  ANALYSIS_UPLOADED: "Analysis uploaded",
-  ANALYSIS_RETRIED: "Analysis retried",
-  REPORT_DOWNLOADED: "Report downloaded",
-  USER_CREATED: "User created",
-};
 
 function resolvePage(value: string | null) {
   if (!value) {
@@ -229,33 +209,6 @@ function ActivityTimelineItem({ event, isLast }: ActivityTimelineItemProps) {
       </div>
     </div>
   );
-}
-
-type AuditEventIconProps = {
-  type: AuditEventType;
-};
-
-function AuditEventIcon({ type }: AuditEventIconProps) {
-  const className = "size-4 text-muted-foreground";
-
-  switch (type) {
-    case "PATIENT_CREATED":
-      return <UserPlus className={className} />;
-    case "PATIENT_PROFILE_UPDATED":
-      return <UserRoundPen className={className} />;
-    case "PATIENT_ARCHIVED":
-      return <Archive className={className} />;
-    case "PATIENT_RESTORED":
-      return <RotateCcw className={className} />;
-    case "ANALYSIS_UPLOADED":
-      return <UploadCloud className={className} />;
-    case "ANALYSIS_RETRIED":
-      return <RefreshCcw className={className} />;
-    case "REPORT_DOWNLOADED":
-      return <Download className={className} />;
-    case "USER_CREATED":
-      return <UserCog className={className} />;
-  }
 }
 
 type AuditEventLinksProps = {
