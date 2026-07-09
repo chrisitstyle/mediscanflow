@@ -99,7 +99,7 @@ export function PatientListPage() {
         </div>
 
         {canWrite && (
-          <Button asChild>
+          <Button asChild variant="outline">
             <Link href="/patients/new">
               <UserPlus className="size-4" />
               New patient

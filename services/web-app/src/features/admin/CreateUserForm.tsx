@@ -29,11 +29,11 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ApiClientError } from "@/lib/apiClient";
 import { canManageUsers } from "@/lib/permissions";
 import { queryKeys } from "@/lib/queryKeys";
-import { cn } from "@/lib/utils";
 import type { CreateUserInput, UserRole } from "@/types/userManagement";
 
 type FormState = CreateUserInput;
@@ -242,27 +242,13 @@ function CreateUserFormContent() {
                 Go to dashboard
               </span>
 
-              <button
-                type="button"
-                role="switch"
-                aria-checked={redirectToDashboard}
-                aria-labelledby="redirect-to-dashboard-label"
+              <Switch
+                id="redirect-to-dashboard"
+                checked={redirectToDashboard}
                 disabled={mutation.isPending}
-                onClick={() =>
-                  setRedirectToDashboard((previousValue) => !previousValue)
-                }
-                className={cn(
-                  "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                  redirectToDashboard ? "bg-primary" : "bg-muted-foreground/30",
-                )}
-              >
-                <span
-                  className={cn(
-                    "pointer-events-none block size-5 rounded-full bg-background shadow-sm transition-transform",
-                    redirectToDashboard ? "translate-x-5.5" : "translate-x-0.5",
-                  )}
-                />
-              </button>
+                onCheckedChange={setRedirectToDashboard}
+                aria-labelledby="redirect-to-dashboard-label"
+              />
             </div>
           </div>
         </CardHeader>
@@ -372,11 +358,15 @@ function CreateUserFormContent() {
           </CardContent>
 
           <CardFooter className="mt-6 justify-end gap-3">
-            <Button asChild type="button" variant="outline">
+            <Button asChild variant="outline">
               <Link href="/">Cancel</Link>
             </Button>
 
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button
+              variant="outline"
+              type="submit"
+              disabled={mutation.isPending}
+            >
               {mutation.isPending ? "Creating..." : "Create user"}
             </Button>
           </CardFooter>

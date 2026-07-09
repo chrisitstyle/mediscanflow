@@ -180,7 +180,7 @@ export function UploadScanDialog({ patientId }: UploadScanDialogProps) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button>Upload scan</Button>
+        <Button variant="outline">Upload scan</Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-lg">
@@ -253,7 +253,11 @@ export function UploadScanDialog({ patientId }: UploadScanDialogProps) {
               Cancel
             </Button>
 
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button
+              variant="outline"
+              type="submit"
+              disabled={mutation.isPending}
+            >
               {mutation.isPending ? "Uploading..." : "Upload and analyze"}
             </Button>
           </DialogFooter>

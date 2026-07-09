@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { queryKeys } from "@/lib/queryKeys";
+import { SystemStatusBadge } from "@/components/status/SystemStatusBadge";
 
 type ComponentItem = {
   key: string;
@@ -76,9 +77,7 @@ export function SystemStatusCard() {
             </CardDescription>
           </div>
 
-          <Badge variant={getStatusVariant(data?.status)}>
-            {overallStatus}
-          </Badge>
+          <SystemStatusBadge status={overallStatus} />
         </div>
       </CardHeader>
 

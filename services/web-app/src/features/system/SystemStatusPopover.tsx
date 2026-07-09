@@ -1,23 +1,20 @@
 "use client";
 
-import { RefreshCw } from "lucide-react";
+import { Activity, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { getSystemStatus } from "@/api/systemApi";
-import type { SystemComponentStatus } from "@/types/systemStatus";
-
-import {
-  SystemHealthIndicator,
-  SystemStatusDot,
-} from "@/components/status/SystemHealthIndicator";
-import { Badge } from "@/components/ui/badge";
+import { SystemStatusBadge } from "@/components/status/SystemStatusBadge";
+import { SystemHealthIndicator } from "@/components/status/SystemHealthIndicator";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ApiClientError } from "@/lib/apiClient";
 import { queryKeys } from "@/lib/queryKeys";
+import type { SystemComponentStatus } from "@/types/systemStatus";
 
 type ComponentItem = {
   key: string;
@@ -31,24 +28,28 @@ const componentItems: ComponentItem[] = [
   { key: "aiWorker", label: "AI Worker" },
 ];
 
-function getStatusVariant(status?: string) {
-  if (status === "UP") {
-    return "default";
-  }
-
-  if (status === "DOWN") {
-    return "destructive";
-  }
-
-  return "secondary";
-}
-
 function getComponentStatus(component?: SystemComponentStatus): string {
   return component?.status ?? "UNKNOWN";
 }
 
+function getStatusDotClass(status?: string) {
+  if (status === "UP") {
+    return "bg-emerald-500";
+  }
+
+  if (status === "DOWN") {
+    return "bg-red-500";
+  }
+
+  if (status === "DEGRADED") {
+    return "bg-amber-500";
+  }
+
+  return "bg-muted-foreground";
+}
+
 export function SystemStatusPopover() {
-  const { data, isLoading, isFetching, refetch } = useQuery({
+  const { data, isLoading, isError, error, isFetching, refetch } = useQuery({
     queryKey: queryKeys.system.status(),
     queryFn: getSystemStatus,
     refetchInterval: 10_000,
@@ -56,37 +57,53 @@ export function SystemStatusPopover() {
 
   const overallStatus = data?.status ?? (isLoading ? "LOADING" : "UNKNOWN");
 
+  const errorMessage =
+    error instanceof ApiClientError
+      ? error.message
+      : "Could not load system status";
+
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" type="button">
-          <SystemStatusDot status={overallStatus} />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-2 rounded-full"
+        >
+          <span
+            className={`size-3 rounded-full ${getStatusDotClass(data?.status)}`}
+          />
           System status
-          <span className="sr-only">Open system status details</span>
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-80">
+      <PopoverContent align="end" className="w-96 p-4">
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-sm font-semibold">System status</h2>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <h3 className="font-semibold">System status</h3>
+
+              <p className="mt-1 text-sm text-muted-foreground">
                 Current health of MediScanFlow services.
               </p>
             </div>
 
-            <Badge variant={getStatusVariant(data?.status)}>
-              {overallStatus}
-            </Badge>
+            <SystemStatusBadge status={overallStatus} />
           </div>
 
-          <div className="space-y-2">
+          {isError && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {errorMessage}
+            </div>
+          )}
+
+          <div className="space-y-3">
             {componentItems.map((item) => {
               const status = getComponentStatus(data?.components[item.key]);
 
               return (
-                <div key={item.key} className="rounded-md border px-3 py-2">
+                <div key={item.key} className="rounded-lg border px-3 py-2">
                   <SystemHealthIndicator label={item.label} status={status} />
                 </div>
               );
@@ -97,8 +114,8 @@ export function SystemStatusPopover() {
             type="button"
             variant="outline"
             size="sm"
-            className="w-full"
-            onClick={() => refetch()}
+            className="w-full gap-2"
+            onClick={() => void refetch()}
             disabled={isFetching}
           >
             <RefreshCw
@@ -106,6 +123,11 @@ export function SystemStatusPopover() {
             />
             Refresh status
           </Button>
+
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Activity className="size-3.5" />
+            Refreshes automatically every 10 seconds.
+          </p>
         </div>
       </PopoverContent>
     </Popover>
