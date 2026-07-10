@@ -34,7 +34,7 @@ export function QuickActionsCard() {
 
       <CardContent className="flex flex-col gap-3">
         {canWrite && (
-          <Button asChild>
+          <Button asChild variant="outline" className="w-full gap-2">
             <Link href="/patients/new">
               <Plus className="size-4" />
               Create patient
@@ -43,7 +43,7 @@ export function QuickActionsCard() {
         )}
 
         {canManage && (
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="w-full gap-2">
             <Link href="/admin/users/new">
               <UserPlus className="size-4" />
               Create user

@@ -167,7 +167,7 @@ function UsersPageContent({
             Refresh
           </Button>
 
-          <Button asChild>
+          <Button asChild variant="outline">
             <Link href="/admin/users/new">
               <UserPlus className="size-4" aria-hidden="true" />
               Create user

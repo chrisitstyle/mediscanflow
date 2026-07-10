@@ -1,17 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Activity,
-  Archive,
-  Download,
-  FileText,
-  RefreshCcw,
-  RotateCcw,
-  UploadCloud,
-  UserPlus,
-  UserRoundPen,
-} from "lucide-react";
+import { Activity, FileText } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import {
@@ -30,10 +20,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AuditEventIcon } from "@/features/audit/AuditEventIcon";
+import { AUDIT_EVENT_LABELS } from "@/features/audit/auditEventPresentation";
 import { ApiClientError } from "@/lib/apiClient";
-import { queryKeys } from "@/lib/queryKeys";
 import { formatDateTime } from "@/lib/formatters";
-import type { AuditEvent, AuditEventType } from "@/types/audit";
+import { queryKeys } from "@/lib/queryKeys";
+import type { AuditEvent } from "@/types/audit";
 
 type AuditTimelineBaseProps = {
   limit?: number;
@@ -63,17 +55,6 @@ type AuditTimelineProps =
   | RecentAuditTimelineProps
   | PatientAuditTimelineProps
   | AnalysisAuditTimelineProps;
-
-const AUDIT_EVENT_LABELS: Record<AuditEventType, string> = {
-  PATIENT_CREATED: "Patient created",
-  PATIENT_PROFILE_UPDATED: "Patient updated",
-  PATIENT_ARCHIVED: "Patient archived",
-  PATIENT_RESTORED: "Patient restored",
-  ANALYSIS_UPLOADED: "Analysis uploaded",
-  ANALYSIS_RETRIED: "Analysis retried",
-  REPORT_DOWNLOADED: "Report downloaded",
-  USER_CREATED: "User created",
-};
 
 export function AuditTimeline(props: AuditTimelineProps) {
   const limit = props.limit ?? 10;
@@ -195,33 +176,6 @@ function AuditTimelineItem({
       </div>
     </div>
   );
-}
-
-type AuditEventIconProps = {
-  type: AuditEventType;
-};
-
-function AuditEventIcon({ type }: AuditEventIconProps) {
-  const className = "size-4 text-muted-foreground";
-
-  switch (type) {
-    case "PATIENT_CREATED":
-      return <UserPlus className={className} />;
-    case "PATIENT_PROFILE_UPDATED":
-      return <UserRoundPen className={className} />;
-    case "PATIENT_ARCHIVED":
-      return <Archive className={className} />;
-    case "PATIENT_RESTORED":
-      return <RotateCcw className={className} />;
-    case "ANALYSIS_UPLOADED":
-      return <UploadCloud className={className} />;
-    case "ANALYSIS_RETRIED":
-      return <RefreshCcw className={className} />;
-    case "REPORT_DOWNLOADED":
-      return <Download className={className} />;
-    default:
-      return <Activity className={className} />;
-  }
 }
 
 type AuditEventLinksProps = {

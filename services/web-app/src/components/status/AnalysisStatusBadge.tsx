@@ -1,29 +1,24 @@
 import type { AnalysisStatus } from "@/types/analysis";
 
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status/StatusBadge";
+import type { StatusTone } from "@/components/status/statusStyles";
 
 type AnalysisStatusBadgeProps = {
   status: AnalysisStatus;
 };
 
-function getAnalysisStatusVariant(
-  status: AnalysisStatus,
-): "default" | "secondary" | "destructive" | "outline" {
-  if (status === "COMPLETED") {
-    return "default";
-  }
-
-  if (status === "FAILED") {
-    return "destructive";
-  }
-
-  if (status === "UPLOADED") {
-    return "outline";
-  }
-
-  return "secondary";
-}
+const ANALYSIS_STATUS_TONES = {
+  COMPLETED: "success",
+  FAILED: "danger",
+  UPLOADED: "info",
+  PROCESSING: "warning",
+  QUEUED: "neutral",
+} satisfies Partial<Record<AnalysisStatus, StatusTone>>;
 
 export function AnalysisStatusBadge({ status }: AnalysisStatusBadgeProps) {
-  return <Badge variant={getAnalysisStatusVariant(status)}>{status}</Badge>;
+  return (
+    <StatusBadge tone={ANALYSIS_STATUS_TONES[status] ?? "neutral"}>
+      {status}
+    </StatusBadge>
+  );
 }

@@ -99,7 +99,7 @@ export function PatientListPage() {
         </div>
 
         {canWrite && (
-          <Button asChild>
+          <Button asChild variant="outline">
             <Link href="/patients/new">
               <UserPlus className="size-4" />
               New patient
@@ -191,7 +191,7 @@ export function PatientListPage() {
                   Clear search
                 </Button>
               ) : canWrite ? (
-                <Button asChild>
+                <Button asChild variant="outline">
                   <Link href="/patients/new">Create patient</Link>
                 </Button>
               ) : null}

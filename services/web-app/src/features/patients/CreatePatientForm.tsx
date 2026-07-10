@@ -271,7 +271,11 @@ export function CreatePatientForm() {
               <Link href="/patients">Cancel</Link>
             </Button>
 
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button
+              variant="outline"
+              type="submit"
+              disabled={mutation.isPending}
+            >
               {mutation.isPending ? "Creating..." : "Create patient"}
             </Button>
           </CardFooter>

@@ -318,7 +318,11 @@ function EditPatientFormContent({ patient }: EditPatientFormContentProps) {
               <Link href={`/patients/${patient.id}`}>Cancel</Link>
             </Button>
 
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button
+              type="submit"
+              disabled={mutation.isPending}
+              variant="outline"
+            >
               {mutation.isPending ? "Saving..." : "Save changes"}
             </Button>
           </CardFooter>

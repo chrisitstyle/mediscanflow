@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut, Menu, ScanLine, X } from "lucide-react";
 
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { SystemStatusPopover } from "@/features/system/SystemStatusPopover";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { canManageUsers, canViewSystemStatus } from "@/lib/permissions";
@@ -113,6 +114,8 @@ export function AppNavbar() {
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <ThemeToggle />
+
           {canViewSystemStatus(currentUser) && <SystemStatusPopover />}
 
           {/* full user card — only on wide enough screens */}
