@@ -191,7 +191,7 @@ export function PatientListPage() {
                   Clear search
                 </Button>
               ) : canWrite ? (
-                <Button asChild>
+                <Button asChild variant="outline">
                   <Link href="/patients/new">Create patient</Link>
                 </Button>
               ) : null}
