@@ -9,7 +9,6 @@ import type { SystemComponentStatus } from "@/types/systemStatus";
 
 import { SystemHealthIndicator } from "@/components/status/SystemHealthIndicator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -32,18 +31,6 @@ const componentItems: ComponentItem[] = [
   { key: "minio", label: "MinIO" },
   { key: "aiWorker", label: "AI Worker" },
 ];
-
-function getStatusVariant(status?: string) {
-  if (status === "UP") {
-    return "default";
-  }
-
-  if (status === "DOWN") {
-    return "destructive";
-  }
-
-  return "secondary";
-}
 
 function getComponentStatus(component?: SystemComponentStatus): string {
   return component?.status ?? "UNKNOWN";
