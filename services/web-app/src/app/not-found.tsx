@@ -29,11 +29,11 @@ export default function NotFound() {
           Error 404
         </p>
         <h1 className="text-balance text-3xl font-semibold tracking-tight text-foreground">
-          Nie znaleziono strony
+          Page not found
         </h1>
         <p className="mt-3 text-pretty leading-relaxed text-muted-foreground">
           {
-            "Ta strona nie istnieje lub została przeniesiona. Sprawdź adres albo wróć do panelu, aby kontynuować pracę."
+            "This page doesn't exist or may have been moved. Check the address or head back to your dashboard to keep working."
           }
         </p>
 
@@ -41,11 +41,11 @@ export default function NotFound() {
           <Button asChild>
             <Link href="/">
               <ArrowLeft className="size-4" aria-hidden="true" />
-              Wróć do panelu
+              Back to dashboard
             </Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/analyses">Zobacz analizy</Link>
+            <Link href="/analyses">View analyses</Link>
           </Button>
         </div>
       </div>
