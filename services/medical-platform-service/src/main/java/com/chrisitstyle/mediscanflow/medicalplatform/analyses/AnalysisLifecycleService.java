@@ -32,7 +32,7 @@ public class AnalysisLifecycleService {
     private final OutboxEventService outboxEventService;
 
     @Transactional
-    public AnalysisResponseDTO retry(UUID analysisId) {
+    public AnalysisResponseDTO retryAnalysis(UUID analysisId) {
         Analysis analysis = findAnalysisForRetryOrThrow(analysisId);
 
         validateAnalysisCanBeRetried(analysis);

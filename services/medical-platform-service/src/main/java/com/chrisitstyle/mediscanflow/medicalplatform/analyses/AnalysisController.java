@@ -56,7 +56,7 @@ class AnalysisController {
 
     @PostMapping("/analyses/{id}/retry")
     AnalysisResponseDTO retryAnalysis(@PathVariable UUID id) {
-        return analysisLifecycleService.retry(id);
+        return analysisLifecycleService.retryAnalysis(id);
     }
 
     @GetMapping("/patients/{patientId}/analyses")
