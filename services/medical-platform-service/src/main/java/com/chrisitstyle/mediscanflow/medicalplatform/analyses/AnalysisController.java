@@ -16,7 +16,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 class AnalysisController {
 
-    private final AnalysisService analysisService;
+    private final AnalysisCreationService analysisCreationService;
+    private final AnalysisQueryService analysisQueryService;
+    private final AnalysisLifecycleService analysisLifecycleService;
     private final AnalysisReportService analysisReportService;
 
     @PostMapping("/patients/{patientId}/analyses")
@@ -27,34 +29,39 @@ class AnalysisController {
             @RequestParam(defaultValue = "yolo-brain-tumor-detector") String modelName,
             @RequestParam(defaultValue = "yolov8n") String modelVersion
     ) {
-        return analysisService.create(patientId, file, modelName, modelVersion);
+        return analysisCreationService.create(
+                patientId,
+                file,
+                modelName,
+                modelVersion
+        );
     }
 
     @GetMapping("/analyses/recent")
     List<RecentAnalysisDTO> getRecentAnalyses(
             @RequestParam(defaultValue = "10") int limit
     ) {
-        return analysisService.findRecentAnalyses(limit);
+        return analysisQueryService.findRecentAnalyses(limit);
     }
 
     @GetMapping("/analyses")
     List<AnalysisListItemDTO> findAllAnalyses() {
-        return analysisService.findAllAnalyses();
+        return analysisQueryService.findAllAnalyses();
     }
 
     @GetMapping("/analyses/{id}")
     AnalysisResponseDTO findById(@PathVariable UUID id) {
-        return analysisService.findById(id);
+        return analysisQueryService.findById(id);
     }
 
-    @PostMapping("analyses/{id}/retry")
+    @PostMapping("/analyses/{id}/retry")
     AnalysisResponseDTO retryAnalysis(@PathVariable UUID id) {
-        return analysisService.retryAnalysis(id);
+        return analysisLifecycleService.retry(id);
     }
 
     @GetMapping("/patients/{patientId}/analyses")
     List<AnalysisResponseDTO> findByPatientId(@PathVariable UUID patientId) {
-        return analysisService.findByPatientId(patientId);
+        return analysisQueryService.findByPatientId(patientId);
     }
 
     @GetMapping("/analyses/{analysisId}/report")
