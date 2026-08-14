@@ -8,13 +8,8 @@ import com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.dto.CurrentUserDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.LastActiveAdminException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.SelfDisableNotAllowedException;
-import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.CreateUserRequestDTO;
-import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.UpdateUserStatusRequestDTO;
-import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.UserCreatedResponseDTO;
-import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.UserDTO;
-import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.UserStatusDTO;
+import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Locale;
@@ -50,17 +45,14 @@ public class UserManagementService {
         this.userMapper = userMapper;
     }
 
-    @Transactional(readOnly = true)
     public List<UserDTO> getUsers() {
         return userMapper.toDTOs(identityProvider.getUsers());
     }
 
-    @Transactional(readOnly = true)
     public UserDTO getUser(String userId) {
         return userMapper.toDTO(identityProvider.getUser(userId));
     }
 
-    @Transactional
     public UserCreatedResponseDTO createUser(CreateUserRequestDTO request) {
         String firstName = request.firstName().trim();
         String lastName = request.lastName().trim();
@@ -91,7 +83,6 @@ public class UserManagementService {
         );
     }
 
-    @Transactional
     public UserDTO updateUserStatus(String userId, UpdateUserStatusRequestDTO request) {
         UserAccount targetUser = identityProvider.getUser(userId);
         UserStatusDTO requestedStatus = request.status();
