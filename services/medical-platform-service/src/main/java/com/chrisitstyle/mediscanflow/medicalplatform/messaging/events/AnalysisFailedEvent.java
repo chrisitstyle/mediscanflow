@@ -11,4 +11,6 @@ public record AnalysisFailedEvent(
         UUID correlationId,
         AnalysisFailedPayload payload
 ) {
+    public static final String TYPE = "AnalysisFailed";
+    public static final int VERSION = 2;
 }

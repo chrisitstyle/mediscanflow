@@ -11,4 +11,6 @@ public record AnalysisCompletedEvent(
         UUID correlationId,
         AnalysisCompletedPayload payload
 ) {
+    public static final String TYPE = "AnalysisCompleted";
+    public static final int VERSION = 2;
 }

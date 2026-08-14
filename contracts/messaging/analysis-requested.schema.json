@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AnalysisRequestedEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "occurredAt",
+    "correlationId",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventType": {
+      "type": "string",
+      "const": "AnalysisRequested"
+    },
+    "eventVersion": {
+      "type": "integer",
+      "const": 2
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["analysisId", "patientId", "objectKey"],
+      "properties": {
+        "analysisId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "patientId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "objectKey": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

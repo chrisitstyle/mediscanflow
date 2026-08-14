@@ -12,14 +12,17 @@ public record AnalysisRequestedEvent(
         AnalysisRequestedPayload payload
 ) {
 
+    public static final String TYPE = "AnalysisRequested";
+    public static final int VERSION = 2;
+
     public static AnalysisRequestedEvent create(
             UUID analysisId,
             UUID patientId,
             String objectKey) {
         return new AnalysisRequestedEvent(
                 UUID.randomUUID(),
-                "AnalysisRequested",
-                2,
+                TYPE,
+                VERSION,
                 Instant.now(),
                 UUID.randomUUID(),
                 new AnalysisRequestedPayload(

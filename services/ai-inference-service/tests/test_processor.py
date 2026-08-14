@@ -1,12 +1,27 @@
 from types import SimpleNamespace
 
 import processor as processor_module
+from messaging_contracts import (
+    AnalysisCompletedEvent,
+    AnalysisCompletedPayload,
+    AnalysisDetection,
+    AnalysisFailedEvent,
+    AnalysisFailedPayload,
+    AnalysisRequestedEvent,
+)
 from processing_status import ProcessingStatus
 from processor import AnalysisProcessor
 
-ANALYSIS_ID = "analysis-123"
-INPUT_OBJECT_KEY = "analyses/analysis-123/brain-scan.jpg"
-RESULT_OBJECT_KEY = "analyses/analysis-123/result.jpg"
+ANALYSIS_ID = "4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24"
+PATIENT_ID = "9efdb5f0-733e-4f59-8a78-6240e43237c7"
+
+REQUESTED_EVENT_ID = "11111111-1111-4111-8111-111111111111"
+RESULT_EVENT_ID = "22222222-2222-4222-8222-222222222222"
+CORRELATION_ID = "33333333-3333-4333-8333-333333333333"
+
+INPUT_OBJECT_KEY = f"analyses/{ANALYSIS_ID}/brain-scan.jpg"
+RESULT_OBJECT_KEY = f"analyses/{ANALYSIS_ID}/result.jpg"
+
 INPUT_FILE_PATH = "tmp/input.jpg"
 RESULT_FILE_PATH = "tmp/result.jpg"
 
@@ -24,7 +39,7 @@ def test_process_downloads_input_runs_inference_uploads_result_and_returns_compl
 
     requested_event = analysis_requested_event()
 
-    detections = [
+    raw_detections = [
         {
             "label": "tumor",
             "confidence": 0.92,
@@ -35,12 +50,11 @@ def test_process_downloads_input_runs_inference_uploads_result_and_returns_compl
         }
     ]
 
-    completed_event = {
-        "eventType": "AnalysisCompleted",
-        "payload": {
-            "analysisId": ANALYSIS_ID,
-        },
-    }
+    expected_detections = [
+        AnalysisDetection.model_validate(detection) for detection in raw_detections
+    ]
+
+    completed_event = analysis_completed_event(detections=expected_detections)
 
     calls = []
 
@@ -66,7 +80,7 @@ def test_process_downloads_input_runs_inference_uploads_result_and_returns_compl
             )
         )
 
-        return detections, RESULT_FILE_PATH
+        return raw_detections, RESULT_FILE_PATH
 
     def fake_upload_result_file(**kwargs):
         calls.append(
@@ -154,7 +168,7 @@ def test_process_downloads_input_runs_inference_uploads_result_and_returns_compl
             MODEL_NAME,
             MODEL_VERSION,
             RESULT_OBJECT_KEY,
-            detections,
+            expected_detections,
         ),
     ]
 
@@ -270,7 +284,7 @@ def patch_download_input_file(monkeypatch) -> None:
 def patch_failed_event_builder(
     monkeypatch,
     expected_error_message: str,
-    failed_event: dict,
+    failed_event: AnalysisFailedEvent,
 ) -> None:
     def fake_build_failed_event(**kwargs):
         assert kwargs["model_name"] == MODEL_NAME
@@ -317,26 +331,55 @@ def create_model_settings() -> SimpleNamespace:
     )
 
 
-def analysis_requested_event() -> dict:
-    return {
-        "eventId": "event-123",
-        "eventType": "AnalysisRequested",
-        "eventVersion": 2,
-        "occurredAt": "2026-07-04T10:00:00+00:00",
-        "correlationId": "correlation-123",
-        "payload": {
-            "analysisId": ANALYSIS_ID,
-            "patientId": "patient-123",
-            "objectKey": INPUT_OBJECT_KEY,
-        },
-    }
+def analysis_requested_event() -> AnalysisRequestedEvent:
+    return AnalysisRequestedEvent.model_validate(
+        {
+            "eventId": REQUESTED_EVENT_ID,
+            "eventType": "AnalysisRequested",
+            "eventVersion": 2,
+            "occurredAt": "2026-07-04T10:00:00+00:00",
+            "correlationId": CORRELATION_ID,
+            "payload": {
+                "analysisId": ANALYSIS_ID,
+                "patientId": PATIENT_ID,
+                "objectKey": INPUT_OBJECT_KEY,
+            },
+        }
+    )
 
 
-def analysis_failed_event(error_message: str) -> dict:
-    return {
-        "eventType": "AnalysisFailed",
-        "payload": {
-            "analysisId": ANALYSIS_ID,
-            "errorMessage": error_message,
-        },
-    }
+def analysis_completed_event(
+    detections: list[AnalysisDetection],
+) -> AnalysisCompletedEvent:
+    return AnalysisCompletedEvent(
+        event_id=RESULT_EVENT_ID,
+        event_type="AnalysisCompleted",
+        event_version=2,
+        occurred_at="2026-07-04T10:00:08+00:00",
+        correlation_id=CORRELATION_ID,
+        payload=AnalysisCompletedPayload(
+            analysis_id=ANALYSIS_ID,
+            model_name=MODEL_NAME,
+            model_version=MODEL_VERSION,
+            result_object_key=RESULT_OBJECT_KEY,
+            detections=detections,
+        ),
+    )
+
+
+def analysis_failed_event(
+    error_message: str,
+) -> AnalysisFailedEvent:
+    return AnalysisFailedEvent(
+        event_id=RESULT_EVENT_ID,
+        event_type="AnalysisFailed",
+        event_version=2,
+        occurred_at="2026-07-04T10:00:08+00:00",
+        correlation_id=CORRELATION_ID,
+        payload=AnalysisFailedPayload(
+            analysis_id=ANALYSIS_ID,
+            model_name=MODEL_NAME,
+            model_version=MODEL_VERSION,
+            error_message=error_message,
+        ),
+    )
