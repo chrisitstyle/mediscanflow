@@ -7,8 +7,11 @@ import com.chrisitstyle.mediscanflow.medicalplatform.auth.dto.CurrentUserDTO;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -21,15 +24,18 @@ public class AuditEventService {
     private final AuditEventRepository auditEventRepository;
     private final AuditMapper auditMapper;
     private final AuthenticatedUserProvider authenticatedUserProvider;
+    private final ObjectMapper objectMapper;
 
     public AuditEventService(
             AuditEventRepository auditEventRepository,
             AuditMapper auditMapper,
-            AuthenticatedUserProvider authenticatedUserProvider
+            AuthenticatedUserProvider authenticatedUserProvider,
+            ObjectMapper objectMapper
     ) {
         this.auditEventRepository = auditEventRepository;
         this.auditMapper = auditMapper;
         this.authenticatedUserProvider = authenticatedUserProvider;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -48,9 +54,10 @@ public class AuditEventService {
             UUID patientId,
             UUID analysisId,
             String message,
-            String metadata
+            AuditMetadata metadata
     ) {
-        saveEvent(type, patientId, analysisId, message, metadata);
+        Objects.requireNonNull(metadata, "metadata must not be null");
+        saveEvent(type, patientId, analysisId, message, serializeMetadata(metadata));
     }
 
     private void saveEvent(
@@ -144,5 +151,16 @@ public class AuditEventService {
         }
 
         return Math.clamp(size, 1, MAX_LIMIT);
+    }
+
+    private String serializeMetadata(AuditMetadata metadata) {
+        try {
+            return objectMapper.writeValueAsString(metadata);
+        } catch (JacksonException exception) {
+            throw new IllegalStateException(
+                    "Could not serialize audit event metadata",
+                    exception
+            );
+        }
     }
 }
