@@ -28,16 +28,17 @@ class DashboardControllerTest {
                         3,
                         12,
                         2,
-                        9,
-                        1
-                ));
+                        1,
+                        8,
+                        1));
 
         mockMvc.perform(get("/api/dashboard/summary").contextPath("/api"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.patientsCount").value(3))
                 .andExpect(jsonPath("$.analysesCount").value(12))
                 .andExpect(jsonPath("$.queuedAnalysesCount").value(2))
-                .andExpect(jsonPath("$.completedAnalysesCount").value(9))
+                .andExpect(jsonPath("$.processingAnalysesCount").value(1))
+                .andExpect(jsonPath("$.completedAnalysesCount").value(8))
                 .andExpect(jsonPath("$.failedAnalysesCount").value(1));
     }
 }
