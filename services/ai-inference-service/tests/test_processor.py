@@ -13,6 +13,7 @@ from processing_status import ProcessingStatus
 from processor import AnalysisProcessor
 
 ANALYSIS_ID = "4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24"
+ATTEMPT_ID = "55555555-5555-4555-8555-555555555555"
 PATIENT_ID = "9efdb5f0-733e-4f59-8a78-6240e43237c7"
 
 REQUESTED_EVENT_ID = "11111111-1111-4111-8111-111111111111"
@@ -176,6 +177,7 @@ def test_process_downloads_input_runs_inference_uploads_result_and_returns_compl
         INPUT_FILE_PATH,
         RESULT_FILE_PATH,
     ]
+    assert completed_event.payload.attempt_id == requested_event.payload.attempt_id
 
 
 def test_process_returns_failed_event_when_inference_fails_and_cleans_input_file(
@@ -222,6 +224,7 @@ def test_process_returns_failed_event_when_inference_fails_and_cleans_input_file
         INPUT_FILE_PATH,
         None,
     ]
+    assert failed_event.payload.attempt_id == requested_event.payload.attempt_id
 
 
 def test_process_returns_failed_event_when_upload_fails_and_cleans_temp_files(
@@ -336,13 +339,14 @@ def analysis_requested_event() -> AnalysisRequestedEvent:
         {
             "eventId": REQUESTED_EVENT_ID,
             "eventType": "AnalysisRequested",
-            "eventVersion": 2,
+            "eventVersion": 3,
             "occurredAt": "2026-07-04T10:00:00+00:00",
             "correlationId": CORRELATION_ID,
             "payload": {
                 "analysisId": ANALYSIS_ID,
                 "patientId": PATIENT_ID,
                 "objectKey": INPUT_OBJECT_KEY,
+                "attemptId": ATTEMPT_ID,
             },
         }
     )
@@ -354,11 +358,12 @@ def analysis_completed_event(
     return AnalysisCompletedEvent(
         event_id=RESULT_EVENT_ID,
         event_type="AnalysisCompleted",
-        event_version=2,
+        event_version=3,
         occurred_at="2026-07-04T10:00:08+00:00",
         correlation_id=CORRELATION_ID,
         payload=AnalysisCompletedPayload(
             analysis_id=ANALYSIS_ID,
+            attempt_id=ATTEMPT_ID,
             model_name=MODEL_NAME,
             model_version=MODEL_VERSION,
             result_object_key=RESULT_OBJECT_KEY,
@@ -373,11 +378,12 @@ def analysis_failed_event(
     return AnalysisFailedEvent(
         event_id=RESULT_EVENT_ID,
         event_type="AnalysisFailed",
-        event_version=2,
+        event_version=3,
         occurred_at="2026-07-04T10:00:08+00:00",
         correlation_id=CORRELATION_ID,
         payload=AnalysisFailedPayload(
             analysis_id=ANALYSIS_ID,
+            attempt_id=ATTEMPT_ID,
             model_name=MODEL_NAME,
             model_version=MODEL_VERSION,
             error_message=error_message,

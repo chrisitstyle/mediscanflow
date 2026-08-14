@@ -12,5 +12,5 @@ public record AnalysisCompletedEvent(
         AnalysisCompletedPayload payload
 ) {
     public static final String TYPE = "AnalysisCompleted";
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
 }

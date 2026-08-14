@@ -22,7 +22,7 @@
     },
     "eventVersion": {
       "type": "integer",
-      "const": 2
+      "const": 3
     },
     "occurredAt": {
       "type": "string",
@@ -35,7 +35,7 @@
     "payload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["analysisId", "patientId", "objectKey"],
+      "required": ["analysisId", "patientId", "objectKey", "attemptId"],
       "properties": {
         "analysisId": {
           "type": "string",
@@ -47,6 +47,10 @@
         },
         "objectKey": {
           "type": "string"
+        },
+        "attemptId": {
+          "type": "string",
+          "format": "uuid"
         }
       }
     }

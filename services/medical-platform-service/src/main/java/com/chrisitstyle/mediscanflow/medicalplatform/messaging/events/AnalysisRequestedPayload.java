@@ -5,4 +5,5 @@ import java.util.UUID;
 public record AnalysisRequestedPayload(
         UUID analysisId,
         UUID patientId,
-        String objectKey) { }
+        String objectKey,
+        UUID attemptId) { }

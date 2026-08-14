@@ -4,6 +4,7 @@ from events import build_completed_event, build_failed_event
 from messaging_contracts import AnalysisDetection, AnalysisRequestedEvent
 
 ANALYSIS_ID = "4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24"
+ATTEMPT_ID = "55555555-5555-4555-8555-555555555555"
 PATIENT_ID = "9efdb5f0-733e-4f59-8a78-6240e43237c7"
 
 REQUESTED_EVENT_ID = "11111111-1111-4111-8111-111111111111"
@@ -40,7 +41,7 @@ def test_build_completed_event_creates_analysis_completed_event() -> None:
 
     assert completed_event.event_id
     assert completed_event.event_type == "AnalysisCompleted"
-    assert completed_event.event_version == 2
+    assert completed_event.event_version == 3
     assert completed_event.correlation_id == requested_event.correlation_id
     assert_datetime(completed_event.occurred_at)
 
@@ -51,6 +52,7 @@ def test_build_completed_event_creates_analysis_completed_event() -> None:
     assert payload.model_version == MODEL_VERSION
     assert payload.result_object_key == RESULT_OBJECT_KEY
     assert payload.detections == detections
+    assert completed_event.payload.attempt_id == requested_event.payload.attempt_id
 
 
 def test_build_failed_event_creates_analysis_failed_event() -> None:
@@ -65,7 +67,7 @@ def test_build_failed_event_creates_analysis_failed_event() -> None:
 
     assert failed_event.event_id
     assert failed_event.event_type == "AnalysisFailed"
-    assert failed_event.event_version == 2
+    assert failed_event.event_version == 3
     assert failed_event.correlation_id == requested_event.correlation_id
     assert_datetime(failed_event.occurred_at)
 
@@ -75,6 +77,7 @@ def test_build_failed_event_creates_analysis_failed_event() -> None:
     assert payload.model_name == MODEL_NAME
     assert payload.model_version == MODEL_VERSION
     assert payload.error_message == "Model failed"
+    assert failed_event.payload.attempt_id == requested_event.payload.attempt_id
 
 
 def analysis_requested_event() -> AnalysisRequestedEvent:
@@ -82,13 +85,14 @@ def analysis_requested_event() -> AnalysisRequestedEvent:
         {
             "eventId": REQUESTED_EVENT_ID,
             "eventType": "AnalysisRequested",
-            "eventVersion": 2,
+            "eventVersion": 3,
             "occurredAt": "2026-07-04T10:00:00+00:00",
             "correlationId": CORRELATION_ID,
             "payload": {
                 "analysisId": ANALYSIS_ID,
                 "patientId": PATIENT_ID,
                 "objectKey": INPUT_OBJECT_KEY,
+                "attemptId": ATTEMPT_ID,
             },
         }
     )

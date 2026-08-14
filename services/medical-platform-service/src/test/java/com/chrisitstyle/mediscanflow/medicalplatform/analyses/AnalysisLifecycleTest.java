@@ -5,6 +5,7 @@ import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisDe
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 
 import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.*;
 import static com.chrisitstyle.mediscanflow.medicalplatform.testentities.PatientTestEntity.patient;
@@ -12,9 +13,25 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class AnalysisLifecycleTest {
 
-    private static final String RESULT_OBJECT_KEY = "analyses/%s/result.jpg".formatted(ANALYSIS_ID);
+    private static final String RESULT_OBJECT_KEY =
+            "analyses/%s/result.jpg".formatted(ANALYSIS_ID);
 
-    private static final String FAILURE_MESSAGE = "Simulated inference failure";
+    private static final String FAILURE_MESSAGE =
+            "Simulated inference failure";
+
+    @Test
+    void queuedAnalysisHasProcessingAttemptId() {
+        Analysis analysis = queuedAnalysis();
+
+        assertNotNull(analysis.getProcessingAttemptId());
+    }
+
+    @Test
+    void uploadedAnalysisHasNoProcessingAttemptId() {
+        Analysis analysis = uploadedAnalysis();
+
+        assertNull(analysis.getProcessingAttemptId());
+    }
 
     @Test
     void retryMovesFailedAnalysisBackToQueuedAndClearsFailureState() {
@@ -23,12 +40,43 @@ class AnalysisLifecycleTest {
         analysis.retry();
 
         assertEquals(AnalysisStatus.QUEUED, analysis.getStatus());
+        assertNotNull(analysis.getProcessingAttemptId());
         assertNull(analysis.getModelName());
         assertNull(analysis.getModelVersion());
         assertNull(analysis.getErrorMessage());
         assertNull(analysis.getCompletedAt());
         assertNull(analysis.getResultObjectKey());
         assertEquals(0, analysis.getDetections().size());
+    }
+
+    @Test
+    void retryCreatesNewProcessingAttempt() {
+        Analysis analysis = failedAnalysis();
+
+        UUID previousAttemptId = analysis.getProcessingAttemptId();
+
+        analysis.retry();
+
+        assertNotNull(analysis.getProcessingAttemptId());
+        assertNotEquals(previousAttemptId, analysis.getProcessingAttemptId());
+    }
+
+    @Test
+    void recognizesCurrentProcessingAttempt() {
+        Analysis analysis = queuedAnalysis();
+
+        UUID currentAttemptId = analysis.getProcessingAttemptId();
+
+        assertTrue(analysis.isCurrentProcessingAttempt(currentAttemptId));
+
+        assertFalse(analysis.isCurrentProcessingAttempt(UUID.randomUUID()));
+    }
+
+    @Test
+    void uploadedAnalysisDoesNotRecognizeProcessingAttempt() {
+        Analysis analysis = uploadedAnalysis();
+
+        assertFalse(analysis.isCurrentProcessingAttempt(UUID.randomUUID()));
     }
 
     @Test
@@ -53,6 +101,8 @@ class AnalysisLifecycleTest {
     void completeMovesQueuedAnalysisToCompleted() {
         Analysis analysis = queuedAnalysis();
 
+        UUID processingAttemptId = analysis.getProcessingAttemptId();
+
         analysis.complete(
                 MODEL_NAME,
                 MODEL_VERSION,
@@ -60,6 +110,9 @@ class AnalysisLifecycleTest {
                 detections());
 
         assertEquals(AnalysisStatus.COMPLETED, analysis.getStatus());
+        assertEquals(
+                processingAttemptId,
+                analysis.getProcessingAttemptId());
         assertEquals(MODEL_NAME, analysis.getModelName());
         assertEquals(MODEL_VERSION, analysis.getModelVersion());
         assertEquals(RESULT_OBJECT_KEY, analysis.getResultObjectKey());
@@ -72,6 +125,7 @@ class AnalysisLifecycleTest {
     void completeIsIdempotentWhenAnalysisIsAlreadyCompleted() {
         Analysis analysis = completedAnalysis();
 
+        UUID originalAttemptId = analysis.getProcessingAttemptId();
         String originalResultObjectKey = analysis.getResultObjectKey();
         int originalDetectionCount = analysis.getDetections().size();
 
@@ -82,10 +136,17 @@ class AnalysisLifecycleTest {
                 List.of());
 
         assertEquals(AnalysisStatus.COMPLETED, analysis.getStatus());
+        assertEquals(
+                originalAttemptId,
+                analysis.getProcessingAttemptId());
         assertEquals(MODEL_NAME, analysis.getModelName());
         assertEquals(MODEL_VERSION, analysis.getModelVersion());
-        assertEquals(originalResultObjectKey, analysis.getResultObjectKey());
-        assertEquals(originalDetectionCount, analysis.getDetections().size());
+        assertEquals(
+                originalResultObjectKey,
+                analysis.getResultObjectKey());
+        assertEquals(
+                originalDetectionCount,
+                analysis.getDetections().size());
     }
 
     @Test
@@ -93,8 +154,7 @@ class AnalysisLifecycleTest {
         Analysis analysis = failedAnalysis();
         List<AnalysisDetectionPayload> detections = detections();
 
-        assertThrows(
-                InvalidAnalysisStateException.class,
+        assertThrows(InvalidAnalysisStateException.class,
                 () -> analysis.complete(
                         MODEL_NAME,
                         MODEL_VERSION,
@@ -107,8 +167,7 @@ class AnalysisLifecycleTest {
         Analysis analysis = uploadedAnalysis();
         List<AnalysisDetectionPayload> detections = detections();
 
-        assertThrows(
-                InvalidAnalysisStateException.class,
+        assertThrows(InvalidAnalysisStateException.class,
                 () -> analysis.complete(
                         MODEL_NAME,
                         MODEL_VERSION,
@@ -120,12 +179,15 @@ class AnalysisLifecycleTest {
     void failMovesQueuedAnalysisToFailed() {
         Analysis analysis = queuedAnalysis();
 
+        UUID processingAttemptId = analysis.getProcessingAttemptId();
+
         analysis.fail(
                 MODEL_NAME,
                 MODEL_VERSION,
                 FAILURE_MESSAGE);
 
         assertEquals(AnalysisStatus.FAILED, analysis.getStatus());
+        assertEquals(processingAttemptId, analysis.getProcessingAttemptId());
         assertEquals(MODEL_NAME, analysis.getModelName());
         assertEquals(MODEL_VERSION, analysis.getModelVersion());
         assertEquals(FAILURE_MESSAGE, analysis.getErrorMessage());
@@ -138,6 +200,7 @@ class AnalysisLifecycleTest {
     void failIsIdempotentWhenAnalysisIsAlreadyFailed() {
         Analysis analysis = failedAnalysis();
 
+        UUID originalAttemptId = analysis.getProcessingAttemptId();
         String originalModelName = analysis.getModelName();
         String originalModelVersion = analysis.getModelVersion();
         String originalErrorMessage = analysis.getErrorMessage();
@@ -149,16 +212,26 @@ class AnalysisLifecycleTest {
                 "Different failure");
 
         assertEquals(AnalysisStatus.FAILED, analysis.getStatus());
+        assertEquals(
+                originalAttemptId,
+                analysis.getProcessingAttemptId());
         assertEquals(originalModelName, analysis.getModelName());
-        assertEquals(originalModelVersion, analysis.getModelVersion());
-        assertEquals(originalErrorMessage, analysis.getErrorMessage());
-        assertEquals(originalCompletedAt, analysis.getCompletedAt());
+        assertEquals(
+                originalModelVersion,
+                analysis.getModelVersion());
+        assertEquals(
+                originalErrorMessage,
+                analysis.getErrorMessage());
+        assertEquals(
+                originalCompletedAt,
+                analysis.getCompletedAt());
     }
 
     @Test
     void failDoesNotOverwriteCompletedAnalysis() {
         Analysis analysis = completedAnalysis();
 
+        UUID originalAttemptId = analysis.getProcessingAttemptId();
         String originalModelName = analysis.getModelName();
         String originalModelVersion = analysis.getModelVersion();
         String originalResultObjectKey = analysis.getResultObjectKey();
@@ -170,10 +243,19 @@ class AnalysisLifecycleTest {
                 FAILURE_MESSAGE);
 
         assertEquals(AnalysisStatus.COMPLETED, analysis.getStatus());
+        assertEquals(
+                originalAttemptId,
+                analysis.getProcessingAttemptId());
         assertEquals(originalModelName, analysis.getModelName());
-        assertEquals(originalModelVersion, analysis.getModelVersion());
-        assertEquals(originalResultObjectKey, analysis.getResultObjectKey());
-        assertEquals(originalCompletedAt, analysis.getCompletedAt());
+        assertEquals(
+                originalModelVersion,
+                analysis.getModelVersion());
+        assertEquals(
+                originalResultObjectKey,
+                analysis.getResultObjectKey());
+        assertEquals(
+                originalCompletedAt,
+                analysis.getCompletedAt());
         assertNull(analysis.getErrorMessage());
     }
 

@@ -20,13 +20,13 @@ public class OutboxEventService {
         AnalysisRequestedEvent event = AnalysisRequestedEvent.create(
                 analysis.getId(),
                 analysis.getPatient().getId(),
-                analysis.getObjectKey());
+                analysis.getObjectKey(),
+                analysis.getProcessingAttemptId());
 
         OutboxEvent outboxEvent = OutboxEvent.pending(
                 ANALYSIS_REQUESTED_EVENT,
                 analysis.getId(),
-                toJson(event)
-        );
+                toJson(event));
 
         outboxEventRepository.save(outboxEvent);
     }
@@ -35,7 +35,10 @@ public class OutboxEventService {
         try {
             return objectMapper.writeValueAsString(event);
         } catch (JacksonException exception) {
-            throw new IllegalStateException("Could not serialize outbox event payload", exception);
+            throw new IllegalStateException(
+                    "Could not serialize outbox event payload",
+                    exception
+            );
         }
     }
 }

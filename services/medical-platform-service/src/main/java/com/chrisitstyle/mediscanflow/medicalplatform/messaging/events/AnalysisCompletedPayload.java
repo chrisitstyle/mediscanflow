@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record AnalysisCompletedPayload(
         UUID analysisId,
+        UUID attemptId,
         String modelName,
         String modelVersion,
         String resultObjectKey,

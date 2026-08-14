@@ -16,6 +16,7 @@ public class AnalysisCompletedEventListener {
     public void handle(AnalysisCompletedEvent event) {
         analysisLifecycleService.complete(
                 event.payload().analysisId(),
+                event.payload().attemptId(),
                 event.payload().modelName(),
                 event.payload().modelVersion(),
                 event.payload().resultObjectKey(),

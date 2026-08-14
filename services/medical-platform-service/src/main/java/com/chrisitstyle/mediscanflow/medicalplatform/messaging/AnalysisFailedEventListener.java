@@ -16,9 +16,9 @@ public class AnalysisFailedEventListener {
     public void handle(AnalysisFailedEvent event) {
         analysisLifecycleService.fail(
                 event.payload().analysisId(),
+                event.payload().attemptId(),
                 event.payload().modelName(),
                 event.payload().modelVersion(),
-                event.payload().errorMessage()
-        );
+                event.payload().errorMessage());
     }
 }

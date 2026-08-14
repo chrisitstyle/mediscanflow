@@ -55,7 +55,7 @@ class OutboxEventServiceTest {
         assertEquals(0, outboxEvent.getAttempts());
 
         assertEquals("AnalysisRequested", event.eventType());
-        assertEquals(2, event.eventVersion());
+        assertEquals(3, event.eventVersion());
         assertEquals(ANALYSIS_ID, event.payload().analysisId());
         assertEquals(PATIENT_ID, event.payload().patientId());
         assertEquals(OBJECT_KEY, event.payload().objectKey());

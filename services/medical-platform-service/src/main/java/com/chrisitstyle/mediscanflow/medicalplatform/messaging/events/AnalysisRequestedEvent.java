@@ -1,6 +1,7 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.messaging.events;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 public record AnalysisRequestedEvent(
@@ -13,12 +14,16 @@ public record AnalysisRequestedEvent(
 ) {
 
     public static final String TYPE = "AnalysisRequested";
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
 
     public static AnalysisRequestedEvent create(
             UUID analysisId,
             UUID patientId,
-            String objectKey) {
+            String objectKey,
+            UUID attemptId) {
+
+        Objects.requireNonNull(attemptId,"attemptId must not be null");
+
         return new AnalysisRequestedEvent(
                 UUID.randomUUID(),
                 TYPE,
@@ -28,6 +33,7 @@ public record AnalysisRequestedEvent(
                 new AnalysisRequestedPayload(
                         analysisId,
                         patientId,
-                        objectKey));
+                        objectKey,
+                        attemptId));
     }
 }
