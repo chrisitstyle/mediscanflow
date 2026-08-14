@@ -1,42 +1,56 @@
 from datetime import datetime
 
 from events import build_completed_event, build_failed_event
+from messaging_contracts import AnalysisDetection, AnalysisRequestedEvent
+
+ANALYSIS_ID = "4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24"
+PATIENT_ID = "9efdb5f0-733e-4f59-8a78-6240e43237c7"
+
+REQUESTED_EVENT_ID = "11111111-1111-4111-8111-111111111111"
+CORRELATION_ID = "33333333-3333-4333-8333-333333333333"
+
+MODEL_NAME = "yolo-brain-tumor-detector"
+MODEL_VERSION = "yolov8n"
+
+INPUT_OBJECT_KEY = f"analyses/{ANALYSIS_ID}/brain-scan.jpg"
+RESULT_OBJECT_KEY = f"analyses/{ANALYSIS_ID}/result.jpg"
 
 
 def test_build_completed_event_creates_analysis_completed_event() -> None:
     requested_event = analysis_requested_event()
+
     detections = [
-        {
-            "label": "tumor",
-            "confidence": 0.92,
-            "x": 10,
-            "y": 20,
-            "width": 100,
-            "height": 80,
-        }
+        AnalysisDetection(
+            label="tumor",
+            confidence=0.92,
+            x=10,
+            y=20,
+            width=100,
+            height=80,
+        )
     ]
 
     completed_event = build_completed_event(
         requested_event=requested_event,
-        model_name="yolo-brain-tumor-detector",
-        model_version="yolov8n",
-        result_object_key="analyses/analysis-123/result.jpg",
+        model_name=MODEL_NAME,
+        model_version=MODEL_VERSION,
+        result_object_key=RESULT_OBJECT_KEY,
         detections=detections,
     )
 
-    assert completed_event["eventId"]
-    assert completed_event["eventType"] == "AnalysisCompleted"
-    assert completed_event["eventVersion"] == 2
-    assert completed_event["correlationId"] == "correlation-123"
-    assert_iso_datetime(completed_event["occurredAt"])
+    assert completed_event.event_id
+    assert completed_event.event_type == "AnalysisCompleted"
+    assert completed_event.event_version == 2
+    assert completed_event.correlation_id == requested_event.correlation_id
+    assert_datetime(completed_event.occurred_at)
 
-    payload = completed_event["payload"]
+    payload = completed_event.payload
 
-    assert payload["analysisId"] == "analysis-123"
-    assert payload["modelName"] == "yolo-brain-tumor-detector"
-    assert payload["modelVersion"] == "yolov8n"
-    assert payload["resultObjectKey"] == "analyses/analysis-123/result.jpg"
-    assert payload["detections"] == detections
+    assert payload.analysis_id == requested_event.payload.analysis_id
+    assert payload.model_name == MODEL_NAME
+    assert payload.model_version == MODEL_VERSION
+    assert payload.result_object_key == RESULT_OBJECT_KEY
+    assert payload.detections == detections
 
 
 def test_build_failed_event_creates_analysis_failed_event() -> None:
@@ -44,43 +58,42 @@ def test_build_failed_event_creates_analysis_failed_event() -> None:
 
     failed_event = build_failed_event(
         requested_event=requested_event,
-        model_name="yolo-brain-tumor-detector",
-        model_version="yolov8n",
+        model_name=MODEL_NAME,
+        model_version=MODEL_VERSION,
         error_message="Model failed",
     )
 
-    assert failed_event["eventId"]
-    assert failed_event["eventType"] == "AnalysisFailed"
-    assert failed_event["eventVersion"] == 2
-    assert failed_event["correlationId"] == "correlation-123"
-    assert_iso_datetime(failed_event["occurredAt"])
+    assert failed_event.event_id
+    assert failed_event.event_type == "AnalysisFailed"
+    assert failed_event.event_version == 2
+    assert failed_event.correlation_id == requested_event.correlation_id
+    assert_datetime(failed_event.occurred_at)
 
-    payload = failed_event["payload"]
+    payload = failed_event.payload
 
-    assert payload["analysisId"] == "analysis-123"
-    assert payload["modelName"] == "yolo-brain-tumor-detector"
-    assert payload["modelVersion"] == "yolov8n"
-    assert payload["errorMessage"] == "Model failed"
-    assert failed_event["payload"]["modelName"] == "yolo-brain-tumor-detector"
-    assert failed_event["payload"]["modelVersion"] == "yolov8n"
+    assert payload.analysis_id == requested_event.payload.analysis_id
+    assert payload.model_name == MODEL_NAME
+    assert payload.model_version == MODEL_VERSION
+    assert payload.error_message == "Model failed"
 
 
-def analysis_requested_event() -> dict:
-    return {
-        "eventId": "event-123",
-        "eventType": "AnalysisRequested",
-        "eventVersion": 2,
-        "occurredAt": "2026-07-04T10:00:00+00:00",
-        "correlationId": "correlation-123",
-        "payload": {
-            "analysisId": "analysis-123",
-            "patientId": "patient-123",
-            "objectKey": "analyses/analysis-123/brain-scan.jpg",
-            "modelName": "yolo-brain-tumor-detector",
-            "modelVersion": "yolov8n",
-        },
-    }
+def analysis_requested_event() -> AnalysisRequestedEvent:
+    return AnalysisRequestedEvent.model_validate(
+        {
+            "eventId": REQUESTED_EVENT_ID,
+            "eventType": "AnalysisRequested",
+            "eventVersion": 2,
+            "occurredAt": "2026-07-04T10:00:00+00:00",
+            "correlationId": CORRELATION_ID,
+            "payload": {
+                "analysisId": ANALYSIS_ID,
+                "patientId": PATIENT_ID,
+                "objectKey": INPUT_OBJECT_KEY,
+            },
+        }
+    )
 
 
-def assert_iso_datetime(value: str) -> None:
-    datetime.fromisoformat(value)
+def assert_datetime(value: datetime) -> None:
+    assert isinstance(value, datetime)
+    assert value.tzinfo is not None

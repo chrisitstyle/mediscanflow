@@ -15,8 +15,10 @@ from messaging import (
     create_rabbitmq_connection,
     publish_event,
 )
+from messaging_contracts import AnalysisRequestedEvent
 from processing_status import ProcessingStatus
 from processor import AnalysisProcessor
+from pydantic import ValidationError
 from storage import create_minio_client
 
 logger = logging.getLogger(__name__)
@@ -30,13 +32,15 @@ def configure_logging() -> None:
 
 
 def handle_message(
-        channel,
-        method,
-        body,
-        processor: AnalysisProcessor,
+    channel,
+    method,
+    body,
+    processor: AnalysisProcessor,
 ) -> None:
     try:
-        requested_event = json.loads(body.decode("utf-8"))
+        raw_event = json.loads(body.decode("utf-8"))
+
+        requested_event = AnalysisRequestedEvent.model_validate(raw_event)
 
         processing_status, event = processor.process(requested_event)
         routing_key = routing_key_for(processing_status)
@@ -49,8 +53,8 @@ def handle_message(
 
         logger.info(
             "Published %s event for analysisId=%s",
-            event["eventType"],
-            event["payload"]["analysisId"],
+            event.event_type,
+            event.payload.analysis_id,
         )
 
         channel.basic_ack(delivery_tag=method.delivery_tag)
@@ -58,6 +62,17 @@ def handle_message(
     except json.JSONDecodeError as exception:
         logger.warning(
             "Invalid JSON message. Rejecting without requeue. error=%s",
+            exception,
+        )
+
+        channel.basic_nack(
+            delivery_tag=method.delivery_tag,
+            requeue=False,
+        )
+
+    except ValidationError as exception:
+        logger.warning(
+            "Invalid AnalysisRequested contract. Rejecting without requeue. error=%s",
             exception,
         )
 
@@ -78,7 +93,9 @@ def handle_message(
         )
 
 
-def routing_key_for(processing_status: ProcessingStatus) -> str:
+def routing_key_for(
+    processing_status: ProcessingStatus,
+) -> str:
     if processing_status == ProcessingStatus.COMPLETED:
         return ANALYSIS_COMPLETED_ROUTING_KEY
 

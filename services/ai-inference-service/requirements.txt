@@ -2,4 +2,6 @@ pika
 minio
 ultralytics
 opencv-python-headless
+pydantic
+jsonschema
 pytest

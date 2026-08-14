@@ -13,6 +13,19 @@ from messaging import (
     configure_rabbitmq,
     publish_event,
 )
+from messaging_contracts import (
+    AnalysisCompletedEvent,
+    AnalysisCompletedPayload,
+)
+
+ANALYSIS_ID = "4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24"
+EVENT_ID = "11111111-1111-4111-8111-111111111111"
+CORRELATION_ID = "33333333-3333-4333-8333-333333333333"
+
+MODEL_NAME = "yolo-brain-tumor-detector"
+MODEL_VERSION = "yolov8n"
+
+RESULT_OBJECT_KEY = f"analyses/{ANALYSIS_ID}/result.jpg"
 
 
 def test_configure_rabbitmq_declares_exchange_queues_bindings_and_confirms() -> None:
@@ -75,7 +88,14 @@ def test_publish_event_publishes_persistent_json_message_with_mandatory_flag() -
 
     assert published_message["exchange"] == ANALYSIS_EXCHANGE
     assert published_message["routing_key"] == ANALYSIS_COMPLETED_ROUTING_KEY
-    assert json.loads(published_message["body"]) == event
+
+    published_body = json.loads(published_message["body"].decode("utf-8"))
+
+    assert published_body == event.model_dump(
+        by_alias=True,
+        mode="json",
+    )
+
     assert published_message["mandatory"] is True
 
     properties = published_message["properties"]
@@ -99,18 +119,18 @@ def test_publish_event_raises_when_publication_is_not_confirmed() -> None:
         )
 
 
-def analysis_completed_event() -> dict:
-    return {
-        "eventId": "event-123",
-        "eventType": "AnalysisCompleted",
-        "eventVersion": 2,
-        "occurredAt": "2026-07-04T10:00:00+00:00",
-        "correlationId": "correlation-123",
-        "payload": {
-            "analysisId": "analysis-123",
-            "modelName": "yolo-brain-tumor-detector",
-            "modelVersion": "yolov8n",
-            "resultObjectKey": "analyses/analysis-123/result.jpg",
-            "detections": [],
-        },
-    }
+def analysis_completed_event() -> AnalysisCompletedEvent:
+    return AnalysisCompletedEvent(
+        event_id=EVENT_ID,
+        event_type="AnalysisCompleted",
+        event_version=2,
+        occurred_at="2026-07-04T10:00:00+00:00",
+        correlation_id=CORRELATION_ID,
+        payload=AnalysisCompletedPayload(
+            analysis_id=ANALYSIS_ID,
+            model_name=MODEL_NAME,
+            model_version=MODEL_VERSION,
+            result_object_key=RESULT_OBJECT_KEY,
+            detections=[],
+        ),
+    )

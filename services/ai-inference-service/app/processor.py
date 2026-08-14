@@ -2,6 +2,11 @@ import logging
 
 from events import build_completed_event, build_failed_event
 from inference import run_yolo_inference
+from messaging_contracts import (
+    AnalysisDetection,
+    AnalysisRequestedEvent,
+    AnalysisResultEvent,
+)
 from processing_status import ProcessingStatus
 from storage import delete_file_if_exists, download_input_file, upload_result_file
 
@@ -15,10 +20,12 @@ class AnalysisProcessor:
         self.model = model
         self.model_settings = model_settings
 
-    def process(self, requested_event: dict) -> tuple[ProcessingStatus, dict]:
-        payload = requested_event["payload"]
-        analysis_id = payload["analysisId"]
-        object_key = payload["objectKey"]
+    def process(
+        self,
+        requested_event: AnalysisRequestedEvent,
+    ) -> tuple[ProcessingStatus, AnalysisResultEvent]:
+        analysis_id = requested_event.payload.analysis_id
+        object_key = requested_event.payload.object_key
 
         input_file_path = None
         result_file_path = None
@@ -50,11 +57,16 @@ class AnalysisProcessor:
                 analysis_id,
             )
 
-            detections, result_file_path = run_yolo_inference(
+            raw_detections, result_file_path = run_yolo_inference(
                 model=self.model,
                 image_path=input_file_path,
                 settings=self.model_settings,
             )
+
+            detections = [
+                AnalysisDetection.model_validate(detection)
+                for detection in raw_detections
+            ]
 
             result_object_key = f"analyses/{analysis_id}/result.jpg"
 

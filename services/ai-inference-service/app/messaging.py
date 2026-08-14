@@ -1,11 +1,10 @@
-import json
 import logging
 import time
 
 import pika
-from pika.exceptions import AMQPConnectionError
-
 from config import RabbitMQSettings
+from messaging_contracts import MessagingContract
+from pika.exceptions import AMQPConnectionError
 
 logger = logging.getLogger(__name__)
 
@@ -111,11 +110,19 @@ def configure_rabbitmq(channel) -> None:
     logger.info("RabbitMQ topology configured.")
 
 
-def publish_event(channel, routing_key: str, event: dict) -> None:
+def publish_event(
+    channel,
+    routing_key: str,
+    event: MessagingContract,
+) -> None:
+    body = event.model_dump_json(
+        by_alias=True,
+    ).encode("utf-8")
+
     published = channel.basic_publish(
         exchange=ANALYSIS_EXCHANGE,
         routing_key=routing_key,
-        body=json.dumps(event),
+        body=body,
         properties=pika.BasicProperties(
             content_type="application/json",
             delivery_mode=2,
