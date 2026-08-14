@@ -31,7 +31,8 @@ class DashboardServiceTest {
         when(patientRepository.count()).thenReturn(3L);
         when(analysisRepository.count()).thenReturn(12L);
         when(analysisRepository.countByStatus(AnalysisStatus.QUEUED)).thenReturn(2L);
-        when(analysisRepository.countByStatus(AnalysisStatus.COMPLETED)).thenReturn(9L);
+        when(analysisRepository.countByStatus(AnalysisStatus.PROCESSING)).thenReturn(1L);
+        when(analysisRepository.countByStatus(AnalysisStatus.COMPLETED)).thenReturn(8L);
         when(analysisRepository.countByStatus(AnalysisStatus.FAILED)).thenReturn(1L);
 
         DashboardSummaryDTO summary = dashboardService.getSummary();
@@ -40,7 +41,8 @@ class DashboardServiceTest {
                 () -> assertEquals(3L, summary.patientsCount()),
                 () -> assertEquals(12L, summary.analysesCount()),
                 () -> assertEquals(2L, summary.queuedAnalysesCount()),
-                () -> assertEquals(9L, summary.completedAnalysesCount()),
+                () -> assertEquals(1L, summary.processingAnalysesCount()),
+                () -> assertEquals(8L, summary.completedAnalysesCount()),
                 () -> assertEquals(1L, summary.failedAnalysesCount())
         );
     }

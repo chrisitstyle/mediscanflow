@@ -20,6 +20,8 @@ public class RabbitMQConfig {
     public static final String ANALYSIS_EXCHANGE = "mediscanflow.analysis";
     public static final String ANALYSIS_REQUESTED_QUEUE = "analysis.requested";
     public static final String ANALYSIS_REQUESTED_ROUTING_KEY = "analysis.requested";
+    public static final String ANALYSIS_PROCESSING_STARTED_QUEUE = "analysis.processing-started";
+    public static final String ANALYSIS_PROCESSING_STARTED_ROUTING_KEY = "analysis.processing-started";
     public static final String ANALYSIS_COMPLETED_QUEUE = "analysis.completed";
     public static final String ANALYSIS_COMPLETED_ROUTING_KEY = "analysis.completed";
     public static final String ANALYSIS_FAILED_QUEUE = "analysis.failed";
@@ -49,6 +51,24 @@ public class RabbitMQConfig {
                 .bind(analysisRequestedQueue)
                 .to(analysisExchange)
                 .with(ANALYSIS_REQUESTED_ROUTING_KEY);
+    }
+
+    @Bean
+    Queue analysisProcessingStartedQueue() {
+        return QueueBuilder
+                .durable(ANALYSIS_PROCESSING_STARTED_QUEUE)
+                .build();
+    }
+
+    @Bean
+    Binding analysisProcessingStartedBinding(
+            Queue analysisProcessingStartedQueue,
+            DirectExchange analysisExchange
+    ) {
+        return BindingBuilder
+                .bind(analysisProcessingStartedQueue)
+                .to(analysisExchange)
+                .with(ANALYSIS_PROCESSING_STARTED_ROUTING_KEY);
     }
 
     @Bean

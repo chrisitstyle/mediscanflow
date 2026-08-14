@@ -8,6 +8,8 @@ from messaging_contracts import (
     AnalysisDetection,
     AnalysisFailedEvent,
     AnalysisFailedPayload,
+    AnalysisProcessingStartedEvent,
+    AnalysisProcessingStartedPayload,
     AnalysisRequestedEvent,
 )
 
@@ -27,6 +29,25 @@ MODEL_VERSION = "yolov8n"
 
 INPUT_OBJECT_KEY = f"analyses/{ANALYSIS_ID}/brain-scan.jpg"
 RESULT_OBJECT_KEY = f"analyses/{ANALYSIS_ID}/result.jpg"
+
+
+def test_analysis_processing_started_event_matches_schema() -> None:
+    event = AnalysisProcessingStartedEvent(
+        event_id=COMPLETED_EVENT_ID,
+        event_type="AnalysisProcessingStarted",
+        event_version=1,
+        occurred_at="2026-07-04T10:00:01+00:00",
+        correlation_id=CORRELATION_ID,
+        payload=AnalysisProcessingStartedPayload(
+            analysis_id=ANALYSIS_ID,
+            attempt_id=ATTEMPT_ID,
+        ),
+    )
+
+    assert_matches_schema(
+        event,
+        "analysis-processing-started.schema.json",
+    )
 
 
 def test_analysis_requested_event_matches_schema() -> None:

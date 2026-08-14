@@ -13,11 +13,57 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class AnalysisLifecycleTest {
 
-    private static final String RESULT_OBJECT_KEY =
-            "analyses/%s/result.jpg".formatted(ANALYSIS_ID);
+    private static final String RESULT_OBJECT_KEY = "analyses/%s/result.jpg".formatted(ANALYSIS_ID);
+    private static final String FAILURE_MESSAGE = "Simulated inference failure";
 
-    private static final String FAILURE_MESSAGE =
-            "Simulated inference failure";
+    @Test
+    void startProcessingMovesQueuedAnalysisToProcessing() {
+        Analysis analysis = queuedAnalysis();
+
+        UUID attemptId = analysis.getProcessingAttemptId();
+
+        analysis.startProcessing();
+
+        assertEquals(AnalysisStatus.PROCESSING, analysis.getStatus());
+        assertEquals(attemptId, analysis.getProcessingAttemptId());
+    }
+
+    @Test
+    void startProcessingIsIdempotentWhenAlreadyProcessing() {
+        Analysis analysis = queuedAnalysis();
+
+        UUID attemptId = analysis.getProcessingAttemptId();
+
+        analysis.startProcessing();
+        analysis.startProcessing();
+
+        assertEquals(AnalysisStatus.PROCESSING, analysis.getStatus());
+        assertEquals(attemptId, analysis.getProcessingAttemptId());
+    }
+
+    @Test
+    void startProcessingDoesNotOverwriteCompletedAnalysis() {
+        Analysis analysis = completedAnalysis();
+
+        UUID attemptId = analysis.getProcessingAttemptId();
+
+        analysis.startProcessing();
+
+        assertEquals(AnalysisStatus.COMPLETED, analysis.getStatus());
+        assertEquals(attemptId, analysis.getProcessingAttemptId());
+    }
+
+    @Test
+    void startProcessingDoesNotOverwriteFailedAnalysis() {
+        Analysis analysis = failedAnalysis();
+
+        UUID attemptId = analysis.getProcessingAttemptId();
+
+        analysis.startProcessing();
+
+        assertEquals(AnalysisStatus.FAILED, analysis.getStatus());
+        assertEquals(attemptId, analysis.getProcessingAttemptId());
+    }
 
     @Test
     void queuedAnalysisHasProcessingAttemptId() {

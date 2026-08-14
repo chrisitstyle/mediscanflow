@@ -49,6 +49,48 @@ class AnalysisLifecycleServiceTest {
     }
 
     @Test
+    void startProcessingProcessesCurrentAttempt() {
+        Analysis analysis = queuedAnalysis();
+        UUID attemptId = analysis.getProcessingAttemptId();
+
+        when(analysisRepository.findById(ANALYSIS_ID))
+                .thenReturn(Optional.of(analysis));
+
+        analysisLifecycleService.startProcessing(
+                ANALYSIS_ID,
+                attemptId);
+
+        assertEquals(
+                AnalysisStatus.PROCESSING,
+                analysis.getStatus());
+        assertEquals(
+                attemptId,
+                analysis.getProcessingAttemptId());
+    }
+
+    @Test
+    void startProcessingIgnoresStaleAttempt() {
+        Analysis analysis = queuedAnalysis();
+
+        UUID currentAttemptId = analysis.getProcessingAttemptId();
+        UUID staleAttemptId = UUID.randomUUID();
+
+        when(analysisRepository.findById(ANALYSIS_ID))
+                .thenReturn(Optional.of(analysis));
+
+        analysisLifecycleService.startProcessing(
+                ANALYSIS_ID,
+                staleAttemptId);
+
+        assertEquals(
+                AnalysisStatus.QUEUED,
+                analysis.getStatus());
+        assertEquals(
+                currentAttemptId,
+                analysis.getProcessingAttemptId());
+    }
+
+    @Test
     void retryMovesFailedAnalysisBackToQueued() {
         Analysis failedAnalysis = failedAnalysis();
 

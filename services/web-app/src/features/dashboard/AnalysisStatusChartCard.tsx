@@ -47,6 +47,7 @@ export function AnalysisStatusChartCard() {
   const statusQuery = useQuery({
     queryKey: queryKeys.dashboard.analysisStatusBreakdown(),
     queryFn: getAnalysisStatusBreakdown,
+    refetchInterval: 10_000,
   });
 
   const errorMessage =

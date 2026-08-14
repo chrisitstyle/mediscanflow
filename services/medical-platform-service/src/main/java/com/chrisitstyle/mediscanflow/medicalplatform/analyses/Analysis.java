@@ -104,6 +104,22 @@ public class Analysis {
                 Instant.now());
     }
 
+    public void startProcessing() {
+        if (this.status == AnalysisStatus.PROCESSING
+                || this.status == AnalysisStatus.COMPLETED
+                || this.status == AnalysisStatus.FAILED) {
+            return;
+        }
+
+        if (this.status != AnalysisStatus.QUEUED) {
+            throw new InvalidAnalysisStateException(
+                    "Only queued analyses can start processing."
+            );
+        }
+
+        this.status = AnalysisStatus.PROCESSING;
+    }
+
     public void complete(
             String modelName,
             String modelVersion,

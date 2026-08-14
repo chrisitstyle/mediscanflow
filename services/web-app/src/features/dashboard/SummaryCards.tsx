@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Clock3,
   FileImage,
+  LoaderCircle,
   Users,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -56,16 +57,22 @@ export function SummaryCards() {
       icon: FileImage,
     },
     {
-      title: "Completed",
-      value: summary?.completedAnalysesCount,
-      description: "Finished AI analyses",
-      icon: CheckCircle2,
-    },
-    {
       title: "Queued",
       value: summary?.queuedAnalysesCount,
       description: "Waiting for processing",
       icon: Clock3,
+    },
+    {
+      title: "Processing",
+      value: summary?.processingAnalysesCount,
+      description: "Currently being analyzed",
+      icon: LoaderCircle,
+    },
+    {
+      title: "Completed",
+      value: summary?.completedAnalysesCount,
+      description: "Finished AI analyses",
+      icon: CheckCircle2,
     },
     {
       title: "Failed",
@@ -85,7 +92,7 @@ export function SummaryCards() {
   }
 
   return (
-    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       {summaryItems.map((item) => {
         const Icon = item.icon;
 

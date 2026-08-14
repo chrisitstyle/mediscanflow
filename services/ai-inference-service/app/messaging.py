@@ -13,6 +13,9 @@ ANALYSIS_EXCHANGE = "mediscanflow.analysis"
 ANALYSIS_REQUESTED_QUEUE = "analysis.requested"
 ANALYSIS_REQUESTED_ROUTING_KEY = "analysis.requested"
 
+ANALYSIS_PROCESSING_STARTED_QUEUE = "analysis.processing-started"
+ANALYSIS_PROCESSING_STARTED_ROUTING_KEY = "analysis.processing-started"
+
 ANALYSIS_COMPLETED_QUEUE = "analysis.completed"
 ANALYSIS_COMPLETED_ROUTING_KEY = "analysis.completed"
 
@@ -81,6 +84,17 @@ def configure_rabbitmq(channel) -> None:
         queue=ANALYSIS_REQUESTED_QUEUE,
         exchange=ANALYSIS_EXCHANGE,
         routing_key=ANALYSIS_REQUESTED_ROUTING_KEY,
+    )
+
+    channel.queue_declare(
+        queue=ANALYSIS_PROCESSING_STARTED_QUEUE,
+        durable=True,
+    )
+
+    channel.queue_bind(
+        queue=ANALYSIS_PROCESSING_STARTED_QUEUE,
+        exchange=ANALYSIS_EXCHANGE,
+        routing_key=ANALYSIS_PROCESSING_STARTED_ROUTING_KEY,
     )
 
     channel.queue_declare(
