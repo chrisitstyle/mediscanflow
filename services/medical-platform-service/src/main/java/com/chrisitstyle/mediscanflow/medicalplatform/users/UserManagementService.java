@@ -8,6 +8,7 @@ import com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.dto.CurrentUserDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.LastActiveAdminException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.SelfDisableNotAllowedException;
+import com.chrisitstyle.mediscanflow.medicalplatform.users.audit.UserStatusChangedAuditMetadata;
 import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.*;
 import org.springframework.stereotype.Service;
 
@@ -128,14 +129,11 @@ public class UserManagementService {
                 eventType,
                 null,
                 null,
-                "User " + user.email() + " was " + user.status().getValue().toLowerCase(Locale.ROOT) + ".",
-                statusChangeMetadata(user)
-        );
-    }
-
-    private String statusChangeMetadata(UserAccount user) {
-        return "{\"targetUserId\":\"" + user.id() + "\","
-                + "\"targetUserEmail\":\"" + user.email() + "\","
-                + "\"status\":\"" + user.status().getValue() + "\"}";
+                "User " + user.email() + " was "
+                        + user.status().getValue().toLowerCase(Locale.ROOT) + ".",
+                new UserStatusChangedAuditMetadata(
+                        user.id(),
+                        user.email(),
+                        user.status()));
     }
 }

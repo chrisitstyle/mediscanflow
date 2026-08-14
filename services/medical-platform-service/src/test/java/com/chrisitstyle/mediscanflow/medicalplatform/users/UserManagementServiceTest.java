@@ -8,15 +8,16 @@ import com.chrisitstyle.mediscanflow.medicalplatform.auth.UserRole;
 import com.chrisitstyle.mediscanflow.medicalplatform.auth.dto.CurrentUserDTO;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.LastActiveAdminException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.SelfDisableNotAllowedException;
+import com.chrisitstyle.mediscanflow.medicalplatform.users.audit.UserStatusChangedAuditMetadata;
 import com.chrisitstyle.mediscanflow.medicalplatform.users.dto.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -118,9 +119,7 @@ class UserManagementServiceTest {
         verify(identityProvider).updateUserEnabled(TARGET_USER_ID, false);
         verifyStatusAuditEvent(
                 AuditEventType.USER_DISABLED,
-                targetUser.withEnabled(false),
-                "Disabled"
-        );
+                targetUser.withEnabled(false));
     }
 
     @Test
@@ -145,9 +144,7 @@ class UserManagementServiceTest {
         verifyNoInteractions(authenticatedUserProvider);
         verifyStatusAuditEvent(
                 AuditEventType.USER_ENABLED,
-                targetUser.withEnabled(true),
-                "Enabled"
-        );
+                targetUser.withEnabled(true));
     }
 
     @Test
@@ -241,9 +238,7 @@ class UserManagementServiceTest {
         verify(identityProvider).updateUserEnabled(TARGET_ADMIN_ID, false);
         verifyStatusAuditEvent(
                 AuditEventType.USER_DISABLED,
-                targetAdmin.withEnabled(false),
-                "Disabled"
-        );
+                targetAdmin.withEnabled(false));
     }
 
     @Test
@@ -293,24 +288,20 @@ class UserManagementServiceTest {
 
     private void verifyStatusAuditEvent(
             AuditEventType eventType,
-            UserAccount user,
-            String status
-    ) {
-        ArgumentCaptor<String> metadataCaptor = ArgumentCaptor.forClass(String.class);
-
+            UserAccount user) {
         verify(auditEventService).recordEventWithMetadata(
                 eq(eventType),
                 isNull(),
                 isNull(),
-                eq("User " + user.email() + " was " + status.toLowerCase() + "."),
-                metadataCaptor.capture()
-        );
-
-        assertEquals(
-                "{\"targetUserId\":\"" + user.id() + "\","
-                        + "\"targetUserEmail\":\"" + user.email() + "\","
-                        + "\"status\":\"" + status + "\"}",
-                metadataCaptor.getValue()
+                eq(
+                        "User " + user.email() + " was "
+                                + user.status().getValue().toLowerCase(Locale.ROOT) + "."
+                ),
+                eq(new UserStatusChangedAuditMetadata(
+                        user.id(),
+                        user.email(),
+                        user.status()
+                ))
         );
     }
 
