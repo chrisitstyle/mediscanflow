@@ -117,7 +117,11 @@ export function AnalysisListPage() {
                       />
                       <MobileMetaRow
                         label="Model"
-                        value={`${analysis.modelName} / ${analysis.modelVersion}`}
+                        value={
+                          analysis.modelName && analysis.modelVersion
+                            ? `${analysis.modelName} / ${analysis.modelVersion}`
+                            : "Pending"
+                        }
                       />
                       <MobileMetaRow
                         label="Created"
@@ -183,10 +187,20 @@ export function AnalysisListPage() {
                         </TableCell>
 
                         <TableCell>
-                          <div className="text-sm">{analysis.modelName}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {analysis.modelVersion}
-                          </div>
+                          {analysis.modelName && analysis.modelVersion ? (
+                            <>
+                              <div className="text-sm">
+                                {analysis.modelName}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {analysis.modelVersion}
+                              </div>
+                            </>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">
+                              Pending
+                            </span>
+                          )}
                         </TableCell>
 
                         <TableCell>

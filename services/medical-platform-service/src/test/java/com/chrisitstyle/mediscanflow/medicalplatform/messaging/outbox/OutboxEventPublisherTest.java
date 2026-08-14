@@ -9,19 +9,9 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
-import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.ANALYSIS_ID;
-import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.MODEL_NAME;
-import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.MODEL_VERSION;
-import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.OBJECT_KEY;
-import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.PATIENT_ID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class OutboxEventPublisherTest {
 
@@ -183,9 +173,6 @@ class OutboxEventPublisherTest {
         return AnalysisRequestedEvent.create(
                 ANALYSIS_ID,
                 PATIENT_ID,
-                OBJECT_KEY,
-                MODEL_NAME,
-                MODEL_VERSION
-        );
+                OBJECT_KEY);
     }
 }

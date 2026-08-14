@@ -6,8 +6,8 @@ export type AnalysisListItem = {
   patientFullName: string;
   status: AnalysisStatus;
   originalFileName: string;
-  modelName: string;
-  modelVersion: string;
+  modelName: string | null;
+  modelVersion: string | null;
   fileSizeBytes: number;
   createdAt: string;
   completedAt: string | null;

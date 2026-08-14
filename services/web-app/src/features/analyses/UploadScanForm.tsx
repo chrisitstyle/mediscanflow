@@ -166,8 +166,7 @@ export function UploadScanForm({ patientId }: UploadScanFormProps) {
               />
 
               <FieldDescription>
-                Accepted formats: JPG, PNG. Maximum file size: 10 MB. Default
-                model: yolo-brain-tumor-detector / yolov8n.
+                Accepted formats: JPG, PNG. Maximum file size: 10 MB.
               </FieldDescription>
 
               {fileError && <FieldError>{fileError}</FieldError>}

@@ -1,5 +1,6 @@
-import processor as processor_module
+from types import SimpleNamespace
 
+import processor as processor_module
 from processing_status import ProcessingStatus
 from processor import AnalysisProcessor
 
@@ -9,16 +10,20 @@ RESULT_OBJECT_KEY = "analyses/analysis-123/result.jpg"
 INPUT_FILE_PATH = "tmp/input.jpg"
 RESULT_FILE_PATH = "tmp/result.jpg"
 
+MODEL_NAME = "yolo-brain-tumor-detector"
+MODEL_VERSION = "yolov8n"
+
 
 def test_process_downloads_input_runs_inference_uploads_result_and_returns_completed_event(
-        monkeypatch,
+    monkeypatch,
 ) -> None:
     minio_client = object()
     minio_settings = object()
     model = object()
-    model_settings = object()
+    model_settings = create_model_settings()
 
     requested_event = analysis_requested_event()
+
     detections = [
         {
             "label": "tumor",
@@ -29,6 +34,7 @@ def test_process_downloads_input_runs_inference_uploads_result_and_returns_compl
             "height": 80,
         }
     ]
+
     completed_event = {
         "eventType": "AnalysisCompleted",
         "payload": {
@@ -78,6 +84,8 @@ def test_process_downloads_input_runs_inference_uploads_result_and_returns_compl
             (
                 "completed_event",
                 kwargs["requested_event"],
+                kwargs["model_name"],
+                kwargs["model_version"],
                 kwargs["result_object_key"],
                 kwargs["detections"],
             )
@@ -143,6 +151,8 @@ def test_process_downloads_input_runs_inference_uploads_result_and_returns_compl
         (
             "completed_event",
             requested_event,
+            MODEL_NAME,
+            MODEL_VERSION,
             RESULT_OBJECT_KEY,
             detections,
         ),
@@ -155,12 +165,13 @@ def test_process_downloads_input_runs_inference_uploads_result_and_returns_compl
 
 
 def test_process_returns_failed_event_when_inference_fails_and_cleans_input_file(
-        monkeypatch,
+    monkeypatch,
 ) -> None:
     requested_event = analysis_requested_event()
     failed_event = analysis_failed_event("YOLO failed")
 
     patch_download_input_file(monkeypatch)
+
     patch_failed_event_builder(
         monkeypatch=monkeypatch,
         expected_error_message="YOLO failed",
@@ -200,12 +211,13 @@ def test_process_returns_failed_event_when_inference_fails_and_cleans_input_file
 
 
 def test_process_returns_failed_event_when_upload_fails_and_cleans_temp_files(
-        monkeypatch,
+    monkeypatch,
 ) -> None:
     requested_event = analysis_requested_event()
     failed_event = analysis_failed_event("MinIO upload failed")
 
     patch_download_input_file(monkeypatch)
+
     patch_failed_event_builder(
         monkeypatch=monkeypatch,
         expected_error_message="MinIO upload failed",
@@ -256,11 +268,13 @@ def patch_download_input_file(monkeypatch) -> None:
 
 
 def patch_failed_event_builder(
-        monkeypatch,
-        expected_error_message: str,
-        failed_event: dict,
+    monkeypatch,
+    expected_error_message: str,
+    failed_event: dict,
 ) -> None:
     def fake_build_failed_event(**kwargs):
+        assert kwargs["model_name"] == MODEL_NAME
+        assert kwargs["model_version"] == MODEL_VERSION
         assert kwargs["error_message"] == expected_error_message
 
         return failed_event
@@ -292,7 +306,14 @@ def create_processor() -> AnalysisProcessor:
         minio_client=object(),
         minio_settings=object(),
         model=object(),
-        model_settings=object(),
+        model_settings=create_model_settings(),
+    )
+
+
+def create_model_settings() -> SimpleNamespace:
+    return SimpleNamespace(
+        name=MODEL_NAME,
+        version=MODEL_VERSION,
     )
 
 
@@ -300,15 +321,13 @@ def analysis_requested_event() -> dict:
     return {
         "eventId": "event-123",
         "eventType": "AnalysisRequested",
-        "eventVersion": 1,
+        "eventVersion": 2,
         "occurredAt": "2026-07-04T10:00:00+00:00",
         "correlationId": "correlation-123",
         "payload": {
             "analysisId": ANALYSIS_ID,
             "patientId": "patient-123",
             "objectKey": INPUT_OBJECT_KEY,
-            "modelName": "yolo-brain-tumor-detector",
-            "modelVersion": "yolov8n",
         },
     }
 

@@ -15,23 +15,16 @@ public record AnalysisRequestedEvent(
     public static AnalysisRequestedEvent create(
             UUID analysisId,
             UUID patientId,
-            String objectKey,
-            String modelName,
-            String modelVersion
-    ) {
+            String objectKey) {
         return new AnalysisRequestedEvent(
                 UUID.randomUUID(),
                 "AnalysisRequested",
-                1,
+                2,
                 Instant.now(),
                 UUID.randomUUID(),
                 new AnalysisRequestedPayload(
                         analysisId,
                         patientId,
-                        objectKey,
-                        modelName,
-                        modelVersion
-                )
-        );
+                        objectKey));
     }
 }

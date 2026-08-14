@@ -20,10 +20,7 @@ public class OutboxEventService {
         AnalysisRequestedEvent event = AnalysisRequestedEvent.create(
                 analysis.getId(),
                 analysis.getPatient().getId(),
-                analysis.getObjectKey(),
-                analysis.getModelName(),
-                analysis.getModelVersion()
-        );
+                analysis.getObjectKey());
 
         OutboxEvent outboxEvent = OutboxEvent.pending(
                 ANALYSIS_REQUESTED_EVENT,

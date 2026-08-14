@@ -78,6 +78,8 @@ class AnalysisProcessor:
 
             return ProcessingStatus.COMPLETED, build_completed_event(
                 requested_event=requested_event,
+                model_name=self.model_settings.name,
+                model_version=self.model_settings.version,
                 result_object_key=result_object_key,
                 detections=detections,
             )
@@ -93,6 +95,8 @@ class AnalysisProcessor:
 
             return ProcessingStatus.FAILED, build_failed_event(
                 requested_event=requested_event,
+                model_name=self.model_settings.name,
+                model_version=self.model_settings.version,
                 error_message=error_message,
             )
 

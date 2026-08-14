@@ -19,10 +19,7 @@ class AnalysisRetryTest {
                 "brain-scan.jpg",
                 "analyses/4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24/brain-scan.jpg",
                 "image/jpeg",
-                30310L,
-                "yolo-brain-tumor-detector",
-                "yolov8n"
-        );
+                30310L);
 
         Analysis analysis = Analysis.queued(
                 analysisId,

@@ -22,6 +22,8 @@ class MinioSettings:
 @dataclass(frozen=True)
 class ModelSettings:
     path: str
+    name: str
+    version: str
     confidence_threshold: float
 
 
@@ -47,6 +49,8 @@ def get_minio_settings() -> MinioSettings:
 def get_model_settings() -> ModelSettings:
     return ModelSettings(
         path=os.getenv("MODEL_PATH", "models/yolov8n-brain-tumor.pt"),
+        name=os.getenv("MODEL_NAME", "yolov8n-brain-tumor"),
+        version=os.getenv("MODEL_VERSION", "latest"),
         confidence_threshold=float(os.getenv("YOLO_CONFIDENCE_THRESHOLD", "0.25")),
     )
 

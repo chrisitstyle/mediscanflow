@@ -208,6 +208,7 @@ The `ai-inference-service` is a Python worker responsible for:
 - running YOLO-based inference
 - generating annotated result images
 - uploading processed images back to MinIO
+- providing the authoritative model name and version used for each inference
 - publishing `analysis.completed` or `analysis.failed` events
 
 ## 🚀 Running the System - local development
@@ -368,7 +369,7 @@ analysis.failed
 7. The worker downloads the original image from MinIO.
 8. The worker runs YOLO inference and generates detection results.
 9. The worker uploads the annotated image back to MinIO.
-10. The worker publishes either a completed or failed event.
+10. The worker publishes either a completed or failed event, including the name and version of the model used for inference.
 11. The backend consumes the result event and updates the analysis status.
 
 ---
@@ -406,6 +407,8 @@ RABBITMQ_HOST=rabbitmq
 MINIO_ENDPOINT=minio:9000
 MINIO_BUCKET=medical-scans
 MODEL_PATH=models/yolov8n-brain-tumor.pt
+MODEL_NAME=yolo-brain-tumor-detector
+MODEL_VERSION=yolov8n
 YOLO_CONFIDENCE_THRESHOLD=0.25
 SIMULATE_INFERENCE_FAILURE=false
 ```
