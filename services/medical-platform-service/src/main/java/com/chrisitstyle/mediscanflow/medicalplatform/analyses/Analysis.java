@@ -1,5 +1,6 @@
 package com.chrisitstyle.mediscanflow.medicalplatform.analyses;
 
+import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.InvalidAnalysisStateException;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisDetectionPayload;
 import com.chrisitstyle.mediscanflow.medicalplatform.patients.Patient;
 import jakarta.persistence.*;
@@ -55,7 +56,7 @@ public class Analysis {
     private String resultObjectKey;
 
     @OneToMany(mappedBy = "analysis", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<AnalysisDetection> detections = new ArrayList<>();
+    private final List<AnalysisDetection> detections = new ArrayList<>();
 
     private Analysis(
             UUID id,
@@ -77,40 +78,37 @@ public class Analysis {
     static Analysis uploaded(
             UUID id,
             Patient patient,
-            AnalysisInput input
-    ) {
+            AnalysisInput input) {
         return new Analysis(
                 id,
                 patient,
                 AnalysisStatus.UPLOADED,
                 input,
-                Instant.now()
-        );
+                Instant.now());
     }
 
     static Analysis queued(
             UUID id,
             Patient patient,
-            AnalysisInput input
-    ) {
+            AnalysisInput input) {
         return new Analysis(
                 id,
                 patient,
                 AnalysisStatus.QUEUED,
                 input,
-                Instant.now()
-        );
+                Instant.now());
     }
 
     public void complete(
             String modelName,
             String modelVersion,
             String resultObjectKey,
-            List<AnalysisDetectionPayload> detectionPayloads
-    ) {
+            List<AnalysisDetectionPayload> detectionPayloads) {
         if (this.status == AnalysisStatus.COMPLETED) {
             return;
         }
+
+        validateCanBeCompleted();
 
         this.status = AnalysisStatus.COMPLETED;
         this.modelName = modelName;
@@ -121,8 +119,7 @@ public class Analysis {
 
         this.detections.clear();
 
-        detectionPayloads.forEach(detectionPayload ->
-                this.detections.add(
+        detectionPayloads.forEach(detectionPayload -> this.detections.add(
                         AnalysisDetection.create(
                                 this,
                                 detectionPayload.label(),
@@ -130,20 +127,19 @@ public class Analysis {
                                 detectionPayload.x(),
                                 detectionPayload.y(),
                                 detectionPayload.width(),
-                                detectionPayload.height()
-                        )
-                )
-        );
+                                detectionPayload.height())));
     }
 
     public void fail(
             String modelName,
             String modelVersion,
-            String errorMessage
-    ) {
-        if (this.status == AnalysisStatus.COMPLETED) {
+            String errorMessage) {
+        if (this.status == AnalysisStatus.FAILED
+                || this.status == AnalysisStatus.COMPLETED) {
             return;
         }
+
+        validateCanBeFailed();
 
         this.status = AnalysisStatus.FAILED;
         this.modelName = modelName;
@@ -155,6 +151,8 @@ public class Analysis {
     }
 
     public void retry() {
+        validateCanBeRetried();
+
         this.status = AnalysisStatus.QUEUED;
         this.modelName = null;
         this.modelVersion = null;
@@ -162,5 +160,28 @@ public class Analysis {
         this.completedAt = null;
         this.resultObjectKey = null;
         this.detections.clear();
+    }
+
+    private void validateCanBeRetried() {
+        if (this.status != AnalysisStatus.FAILED) {
+            throw new InvalidAnalysisStateException("Only failed analyses can be retried.");
+        }
+    }
+
+    private void validateCanBeCompleted() {
+        if (isInactive()) {
+            throw new InvalidAnalysisStateException("Only queued or processing analyses can be completed.");
+        }
+    }
+
+    private void validateCanBeFailed() {
+        if (isInactive()) {
+            throw new InvalidAnalysisStateException("Only queued or processing analyses can fail.");
+        }
+    }
+
+    private boolean isInactive() {
+        return this.status != AnalysisStatus.QUEUED
+                && this.status != AnalysisStatus.PROCESSING;
     }
 }

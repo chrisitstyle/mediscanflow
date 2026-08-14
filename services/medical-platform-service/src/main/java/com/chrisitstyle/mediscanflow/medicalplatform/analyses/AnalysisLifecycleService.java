@@ -4,7 +4,6 @@ import com.chrisitstyle.mediscanflow.medicalplatform.analyses.dto.AnalysisRespon
 import com.chrisitstyle.mediscanflow.medicalplatform.analyses.mapper.AnalysisMapper;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventService;
 import com.chrisitstyle.mediscanflow.medicalplatform.audit.AuditEventType;
-import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.InvalidAnalysisStateException;
 import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.ResourceNotFoundException;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisDetectionPayload;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.outbox.OutboxEventService;
@@ -34,8 +33,6 @@ public class AnalysisLifecycleService {
     @Transactional
     public AnalysisResponseDTO retryAnalysis(UUID analysisId) {
         Analysis analysis = findAnalysisForRetryOrThrow(analysisId);
-
-        validateAnalysisCanBeRetried(analysis);
 
         analysis.retry();
 
@@ -86,14 +83,6 @@ public class AnalysisLifecycleService {
         return analysisRepository.findById(analysisId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ANALYSIS_NOT_FOUND_WITH_ID_MSG + analysisId));
-    }
-
-    private void validateAnalysisCanBeRetried(Analysis analysis) {
-        if (analysis.getStatus() != AnalysisStatus.FAILED) {
-            throw new InvalidAnalysisStateException(
-                    "Only failed analyses can be retried."
-            );
-        }
     }
 
     private void recordAnalysisRetriedAudit(Analysis analysis) {
