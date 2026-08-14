@@ -19,20 +19,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AnalysisMessagingContractTest {
 
-    private static final String ANALYSIS_REQUESTED_SCHEMA =
-            "messaging/analysis-requested.schema.json";
+    private static final String ANALYSIS_REQUESTED_SCHEMA = "messaging/analysis-requested.schema.json";
 
-    private static final String ANALYSIS_COMPLETED_SCHEMA =
-            "messaging/analysis-completed.schema.json";
+    private static final String ANALYSIS_COMPLETED_SCHEMA = "messaging/analysis-completed.schema.json";
 
-    private static final String ANALYSIS_FAILED_SCHEMA =
-            "messaging/analysis-failed.schema.json";
+    private static final String ANALYSIS_FAILED_SCHEMA = "messaging/analysis-failed.schema.json";
 
-    private static final String MODEL_NAME =
-            "yolo-brain-tumor-detector";
+    private static final String MODEL_NAME = "yolo-brain-tumor-detector";
 
-    private static final String MODEL_VERSION =
-            "yolov8n";
+    private static final String MODEL_VERSION = "yolov8n";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -40,11 +35,13 @@ class AnalysisMessagingContractTest {
     void analysisRequestedEventMatchesSchema() throws Exception {
         UUID analysisId = UUID.randomUUID();
         UUID patientId = UUID.randomUUID();
+        UUID attemptId = UUID.randomUUID();
 
         AnalysisRequestedEvent event = AnalysisRequestedEvent.create(
                 analysisId,
                 patientId,
-                "analyses/%s/brain-scan.jpg".formatted(analysisId)
+                "analyses/%s/brain-scan.jpg".formatted(analysisId),
+                attemptId
         );
 
         assertMatchesSchema(
@@ -56,15 +53,17 @@ class AnalysisMessagingContractTest {
     @Test
     void analysisCompletedEventMatchesSchema() throws Exception {
         UUID analysisId = UUID.randomUUID();
-
+        UUID attemptId = UUID.randomUUID();
         AnalysisCompletedEvent event = new AnalysisCompletedEvent(
                 UUID.randomUUID(),
                 AnalysisCompletedEvent.TYPE,
                 AnalysisCompletedEvent.VERSION,
                 Instant.now(),
                 UUID.randomUUID(),
+
                 new AnalysisCompletedPayload(
                         analysisId,
+                        attemptId,
                         MODEL_NAME,
                         MODEL_VERSION,
                         "analyses/%s/result.jpg".formatted(analysisId),
@@ -81,6 +80,7 @@ class AnalysisMessagingContractTest {
     @Test
     void analysisFailedEventMatchesSchema() throws Exception {
         UUID analysisId = UUID.randomUUID();
+        UUID attemptId = UUID.randomUUID();
 
         AnalysisFailedEvent event = new AnalysisFailedEvent(
                 UUID.randomUUID(),
@@ -90,6 +90,7 @@ class AnalysisMessagingContractTest {
                 UUID.randomUUID(),
                 new AnalysisFailedPayload(
                         analysisId,
+                        attemptId,
                         MODEL_NAME,
                         MODEL_VERSION,
                         "Model inference failed"

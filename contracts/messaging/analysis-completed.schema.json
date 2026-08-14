@@ -22,7 +22,7 @@
     },
     "eventVersion": {
       "type": "integer",
-      "const": 2
+      "const": 3
     },
     "occurredAt": {
       "type": "string",
@@ -37,6 +37,7 @@
       "additionalProperties": false,
       "required": [
         "analysisId",
+        "attemptId",
         "modelName",
         "modelVersion",
         "resultObjectKey",
@@ -44,6 +45,10 @@
       ],
       "properties": {
         "analysisId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attemptId": {
           "type": "string",
           "format": "uuid"
         },

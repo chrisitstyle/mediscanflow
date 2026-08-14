@@ -41,6 +41,8 @@ public class Analysis {
     @Column(nullable = false)
     private long fileSizeBytes;
 
+    private UUID processingAttemptId;
+
     private String modelName;
 
     private String modelVersion;
@@ -63,8 +65,8 @@ public class Analysis {
             Patient patient,
             AnalysisStatus status,
             AnalysisInput input,
-            Instant createdAt
-    ) {
+            UUID processingAttemptId,
+            Instant createdAt) {
         this.id = id;
         this.patient = patient;
         this.status = status;
@@ -72,6 +74,7 @@ public class Analysis {
         this.objectKey = input.objectKey();
         this.contentType = input.contentType();
         this.fileSizeBytes = input.fileSizeBytes();
+        this.processingAttemptId = processingAttemptId;
         this.createdAt = createdAt;
     }
 
@@ -84,6 +87,7 @@ public class Analysis {
                 patient,
                 AnalysisStatus.UPLOADED,
                 input,
+                null,
                 Instant.now());
     }
 
@@ -96,6 +100,7 @@ public class Analysis {
                 patient,
                 AnalysisStatus.QUEUED,
                 input,
+                UUID.randomUUID(),
                 Instant.now());
     }
 
@@ -120,14 +125,14 @@ public class Analysis {
         this.detections.clear();
 
         detectionPayloads.forEach(detectionPayload -> this.detections.add(
-                        AnalysisDetection.create(
-                                this,
-                                detectionPayload.label(),
-                                detectionPayload.confidence(),
-                                detectionPayload.x(),
-                                detectionPayload.y(),
-                                detectionPayload.width(),
-                                detectionPayload.height())));
+                AnalysisDetection.create(
+                        this,
+                        detectionPayload.label(),
+                        detectionPayload.confidence(),
+                        detectionPayload.x(),
+                        detectionPayload.y(),
+                        detectionPayload.width(),
+                        detectionPayload.height())));
     }
 
     public void fail(
@@ -154,12 +159,18 @@ public class Analysis {
         validateCanBeRetried();
 
         this.status = AnalysisStatus.QUEUED;
+        this.processingAttemptId = UUID.randomUUID();
         this.modelName = null;
         this.modelVersion = null;
         this.errorMessage = null;
         this.completedAt = null;
         this.resultObjectKey = null;
         this.detections.clear();
+    }
+
+    public boolean isCurrentProcessingAttempt(UUID attemptId) {
+        return this.processingAttemptId != null
+                && this.processingAttemptId.equals(attemptId);
     }
 
     private void validateCanBeRetried() {

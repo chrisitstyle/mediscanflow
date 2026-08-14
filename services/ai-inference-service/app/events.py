@@ -25,11 +25,12 @@ def build_completed_event(
     return AnalysisCompletedEvent(
         event_id=uuid4(),
         event_type="AnalysisCompleted",
-        event_version=2,
+        event_version=3,
         occurred_at=utc_now(),
         correlation_id=requested_event.correlation_id,
         payload=AnalysisCompletedPayload(
             analysis_id=requested_event.payload.analysis_id,
+            attempt_id=requested_event.payload.attempt_id,
             model_name=model_name,
             model_version=model_version,
             result_object_key=result_object_key,
@@ -47,11 +48,12 @@ def build_failed_event(
     return AnalysisFailedEvent(
         event_id=uuid4(),
         event_type="AnalysisFailed",
-        event_version=2,
+        event_version=3,
         occurred_at=utc_now(),
         correlation_id=requested_event.correlation_id,
         payload=AnalysisFailedPayload(
             analysis_id=requested_event.payload.analysis_id,
+            attempt_id=requested_event.payload.attempt_id,
             model_name=model_name,
             model_version=model_version,
             error_message=error_message,

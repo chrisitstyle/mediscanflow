@@ -19,12 +19,13 @@ class AnalysisRequestedPayload(MessagingContract):
     analysis_id: UUID
     patient_id: UUID
     object_key: str
+    attempt_id: UUID
 
 
 class AnalysisRequestedEvent(MessagingContract):
     event_id: UUID
     event_type: Literal["AnalysisRequested"]
-    event_version: Literal[2]
+    event_version: Literal[3]
     occurred_at: datetime
     correlation_id: UUID
     payload: AnalysisRequestedPayload
@@ -41,6 +42,7 @@ class AnalysisDetection(MessagingContract):
 
 class AnalysisCompletedPayload(MessagingContract):
     analysis_id: UUID
+    attempt_id: UUID
     model_name: str
     model_version: str
     result_object_key: str
@@ -50,7 +52,7 @@ class AnalysisCompletedPayload(MessagingContract):
 class AnalysisCompletedEvent(MessagingContract):
     event_id: UUID
     event_type: Literal["AnalysisCompleted"]
-    event_version: Literal[2]
+    event_version: Literal[3]
     occurred_at: datetime
     correlation_id: UUID
     payload: AnalysisCompletedPayload
@@ -58,6 +60,7 @@ class AnalysisCompletedEvent(MessagingContract):
 
 class AnalysisFailedPayload(MessagingContract):
     analysis_id: UUID
+    attempt_id: UUID
     model_name: str
     model_version: str
     error_message: str
@@ -66,7 +69,7 @@ class AnalysisFailedPayload(MessagingContract):
 class AnalysisFailedEvent(MessagingContract):
     event_id: UUID
     event_type: Literal["AnalysisFailed"]
-    event_version: Literal[2]
+    event_version: Literal[3]
     occurred_at: datetime
     correlation_id: UUID
     payload: AnalysisFailedPayload

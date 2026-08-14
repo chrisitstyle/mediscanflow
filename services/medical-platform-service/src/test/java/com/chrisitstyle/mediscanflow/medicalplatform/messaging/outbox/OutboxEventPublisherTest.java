@@ -8,6 +8,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
+import java.util.UUID;
 
 import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,6 +21,8 @@ class OutboxEventPublisherTest {
               "analysisId": "4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24"
             }
             """;
+
+    private static final UUID ATTEMPT_ID = UUID.fromString("55555555-5555-4555-8555-555555555555");
 
     private OutboxEventRepository outboxEventRepository;
     private AnalysisEventPublisher analysisEventPublisher;
@@ -173,6 +176,7 @@ class OutboxEventPublisherTest {
         return AnalysisRequestedEvent.create(
                 ANALYSIS_ID,
                 PATIENT_ID,
-                OBJECT_KEY);
+                OBJECT_KEY,
+                ATTEMPT_ID);
     }
 }

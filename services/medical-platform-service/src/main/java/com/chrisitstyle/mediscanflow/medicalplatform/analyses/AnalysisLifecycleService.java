@@ -8,6 +8,7 @@ import com.chrisitstyle.mediscanflow.medicalplatform.common.exception.ResourceNo
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.events.AnalysisDetectionPayload;
 import com.chrisitstyle.mediscanflow.medicalplatform.messaging.outbox.OutboxEventService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import java.util.UUID;
  * Handles analysis lifecycle operations such as retrying,
  * completing, and failing analyses.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AnalysisLifecycleService {
@@ -45,12 +47,23 @@ public class AnalysisLifecycleService {
     @Transactional
     public void complete(
             UUID analysisId,
+            UUID attemptId,
             String modelName,
             String modelVersion,
             String resultObjectKey,
-            List<AnalysisDetectionPayload> detections
-    ) {
+            List<AnalysisDetectionPayload> detections) {
         Analysis analysis = findAnalysisOrThrow(analysisId);
+
+        if (!analysis.isCurrentProcessingAttempt(attemptId)) {
+            log.info(
+                    "Ignoring stale AnalysisCompleted event. "
+                            + "analysisId={}, attemptId={}, currentAttemptId={}",
+                    analysisId,
+                    attemptId,
+                    analysis.getProcessingAttemptId()
+            );
+            return;
+        }
 
         analysis.complete(
                 modelName,
@@ -62,10 +75,22 @@ public class AnalysisLifecycleService {
     @Transactional
     public void fail(
             UUID analysisId,
+            UUID attemptId,
             String modelName,
             String modelVersion,
             String errorMessage) {
         Analysis analysis = findAnalysisOrThrow(analysisId);
+
+        if (!analysis.isCurrentProcessingAttempt(attemptId)) {
+            log.info(
+                    "Ignoring stale AnalysisFailed event. "
+                            + "analysisId={}, attemptId={}, currentAttemptId={}",
+                    analysisId,
+                    attemptId,
+                    analysis.getProcessingAttemptId()
+            );
+            return;
+        }
 
         analysis.fail(
                 modelName,
@@ -82,7 +107,8 @@ public class AnalysisLifecycleService {
     private Analysis findAnalysisForRetryOrThrow(UUID analysisId) {
         return analysisRepository.findById(analysisId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ANALYSIS_NOT_FOUND_WITH_ID_MSG + analysisId));
+                        ANALYSIS_NOT_FOUND_WITH_ID_MSG + analysisId
+                ));
     }
 
     private void recordAnalysisRetriedAudit(Analysis analysis) {

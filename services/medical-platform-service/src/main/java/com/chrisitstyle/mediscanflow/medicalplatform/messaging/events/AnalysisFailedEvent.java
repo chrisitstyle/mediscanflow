@@ -12,5 +12,5 @@ public record AnalysisFailedEvent(
         AnalysisFailedPayload payload
 ) {
     public static final String TYPE = "AnalysisFailed";
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
 }

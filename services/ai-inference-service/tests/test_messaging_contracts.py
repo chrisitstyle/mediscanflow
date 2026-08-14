@@ -14,6 +14,7 @@ from messaging_contracts import (
 CONTRACTS_DIR = Path(__file__).resolve().parents[3] / "contracts" / "messaging"
 
 ANALYSIS_ID = "4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24"
+ATTEMPT_ID = "55555555-5555-4555-8555-555555555555"
 PATIENT_ID = "9efdb5f0-733e-4f59-8a78-6240e43237c7"
 
 REQUESTED_EVENT_ID = "11111111-1111-4111-8111-111111111111"
@@ -33,13 +34,14 @@ def test_analysis_requested_event_matches_schema() -> None:
         {
             "eventId": REQUESTED_EVENT_ID,
             "eventType": "AnalysisRequested",
-            "eventVersion": 2,
+            "eventVersion": 3,
             "occurredAt": "2026-07-04T10:00:00+00:00",
             "correlationId": CORRELATION_ID,
             "payload": {
                 "analysisId": ANALYSIS_ID,
                 "patientId": PATIENT_ID,
                 "objectKey": INPUT_OBJECT_KEY,
+                "attemptId": ATTEMPT_ID,
             },
         }
     )
@@ -54,11 +56,12 @@ def test_analysis_completed_event_matches_schema() -> None:
     event = AnalysisCompletedEvent(
         event_id=COMPLETED_EVENT_ID,
         event_type="AnalysisCompleted",
-        event_version=2,
+        event_version=3,
         occurred_at="2026-07-04T10:01:00+00:00",
         correlation_id=CORRELATION_ID,
         payload=AnalysisCompletedPayload(
             analysis_id=ANALYSIS_ID,
+            attempt_id=ATTEMPT_ID,
             model_name=MODEL_NAME,
             model_version=MODEL_VERSION,
             result_object_key=RESULT_OBJECT_KEY,
@@ -85,11 +88,12 @@ def test_analysis_failed_event_matches_schema() -> None:
     event = AnalysisFailedEvent(
         event_id=FAILED_EVENT_ID,
         event_type="AnalysisFailed",
-        event_version=2,
+        event_version=3,
         occurred_at="2026-07-04T10:01:00+00:00",
         correlation_id=CORRELATION_ID,
         payload=AnalysisFailedPayload(
             analysis_id=ANALYSIS_ID,
+            attempt_id=ATTEMPT_ID,
             model_name=MODEL_NAME,
             model_version=MODEL_VERSION,
             error_message="Model inference failed",

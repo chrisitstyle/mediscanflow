@@ -19,6 +19,7 @@ from messaging_contracts import (
 )
 
 ANALYSIS_ID = "4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24"
+ATTEMPT_ID = "55555555-5555-4555-8555-555555555555"
 EVENT_ID = "11111111-1111-4111-8111-111111111111"
 CORRELATION_ID = "33333333-3333-4333-8333-333333333333"
 
@@ -123,11 +124,12 @@ def analysis_completed_event() -> AnalysisCompletedEvent:
     return AnalysisCompletedEvent(
         event_id=EVENT_ID,
         event_type="AnalysisCompleted",
-        event_version=2,
+        event_version=3,
         occurred_at="2026-07-04T10:00:00+00:00",
         correlation_id=CORRELATION_ID,
         payload=AnalysisCompletedPayload(
             analysis_id=ANALYSIS_ID,
+            attempt_id=ATTEMPT_ID,
             model_name=MODEL_NAME,
             model_version=MODEL_VERSION,
             result_object_key=RESULT_OBJECT_KEY,
