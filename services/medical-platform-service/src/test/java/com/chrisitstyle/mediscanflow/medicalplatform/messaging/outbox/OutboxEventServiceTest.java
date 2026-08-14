@@ -8,19 +8,11 @@ import org.mockito.ArgumentCaptor;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
-import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.ANALYSIS_ID;
-import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.MODEL_NAME;
-import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.MODEL_VERSION;
-import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.OBJECT_KEY;
-import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.PATIENT_ID;
-import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.failedAnalysis;
+import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class OutboxEventServiceTest {
 
@@ -63,12 +55,10 @@ class OutboxEventServiceTest {
         assertEquals(0, outboxEvent.getAttempts());
 
         assertEquals("AnalysisRequested", event.eventType());
-        assertEquals(1, event.eventVersion());
+        assertEquals(2, event.eventVersion());
         assertEquals(ANALYSIS_ID, event.payload().analysisId());
         assertEquals(PATIENT_ID, event.payload().patientId());
         assertEquals(OBJECT_KEY, event.payload().objectKey());
-        assertEquals(MODEL_NAME, event.payload().modelName());
-        assertEquals(MODEL_VERSION, event.payload().modelVersion());
     }
 
     @Test

@@ -21,8 +21,7 @@ import java.util.UUID;
 
 import static com.chrisitstyle.mediscanflow.medicalplatform.analyses.AnalysisTestEntity.*;
 import static com.chrisitstyle.mediscanflow.medicalplatform.testentities.PatientTestEntity.patient;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -83,9 +82,7 @@ class AnalysisCreationServiceTest {
 
         AnalysisResponseDTO response = analysisCreationService.create(
                 PATIENT_ID,
-                file,
-                MODEL_NAME,
-                MODEL_VERSION);
+                file);
 
         assertEquals(ANALYSIS_ID, response.id());
         assertEquals(PATIENT_ID, response.patientId());
@@ -127,9 +124,7 @@ class AnalysisCreationServiceTest {
                 RuntimeException.class,
                 () -> analysisCreationService.create(
                         PATIENT_ID,
-                        file,
-                        MODEL_NAME,
-                        MODEL_VERSION));
+                        file));
 
         assertEquals(repositoryException, exception);
 
@@ -153,9 +148,7 @@ class AnalysisCreationServiceTest {
                 ResourceNotFoundException.class,
                 () -> analysisCreationService.create(
                         PATIENT_ID,
-                        file,
-                        MODEL_NAME,
-                        MODEL_VERSION));
+                        file));
 
         verify(fileUploadValidator).validateImageFile(file);
         verify(fileStorageService, never())
@@ -180,11 +173,7 @@ class AnalysisCreationServiceTest {
                 InvalidPatientStateException.class,
                 () -> analysisCreationService.create(
                         PATIENT_ID,
-                        file,
-                        MODEL_NAME,
-                        MODEL_VERSION
-                )
-        );
+                        file));
 
         verify(fileUploadValidator).validateImageFile(file);
         verify(fileStorageService, never())

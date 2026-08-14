@@ -19,11 +19,9 @@ import static org.mockito.Mockito.when;
  */
 public final class AnalysisTestEntity {
 
-    public static final UUID ANALYSIS_ID =
-            UUID.fromString("4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24");
+    public static final UUID ANALYSIS_ID = UUID.fromString("4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24");
 
-    public static final UUID PATIENT_ID =
-            UUID.fromString("9efdb5f0-733e-4f59-8a78-6240e43237c7");
+    public static final UUID PATIENT_ID = UUID.fromString("9efdb5f0-733e-4f59-8a78-6240e43237c7");
 
     public static final String PATIENT_FULL_NAME = "John Doe";
     public static final String ORIGINAL_FILE_NAME = "brain-scan.jpg";
@@ -72,6 +70,8 @@ public final class AnalysisTestEntity {
      * @return analysis response DTO with fixed test values
      */
     public static AnalysisResponseDTO analysisResponseDTO(AnalysisStatus status) {
+        boolean hasModelMetadata = status == AnalysisStatus.COMPLETED || status == AnalysisStatus.FAILED;
+
         return new AnalysisResponseDTO(
                 ANALYSIS_ID,
                 PATIENT_ID,
@@ -83,8 +83,8 @@ public final class AnalysisTestEntity {
                 null,
                 CONTENT_TYPE,
                 FILE_SIZE_BYTES,
-                MODEL_NAME,
-                MODEL_VERSION,
+                hasModelMetadata ? MODEL_NAME : null,
+                hasModelMetadata ? MODEL_VERSION : null,
                 null,
                 CREATED_AT,
                 null,
@@ -119,10 +119,7 @@ public final class AnalysisTestEntity {
                 ORIGINAL_FILE_NAME,
                 OBJECT_KEY,
                 CONTENT_TYPE,
-                FILE_SIZE_BYTES,
-                MODEL_NAME,
-                MODEL_VERSION
-        );
+                FILE_SIZE_BYTES);
 
         return Analysis.queued(
                 ANALYSIS_ID,

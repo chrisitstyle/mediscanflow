@@ -2,7 +2,6 @@ import json
 from unittest.mock import Mock, call
 
 import pytest
-
 from messaging import (
     ANALYSIS_COMPLETED_QUEUE,
     ANALYSIS_COMPLETED_ROUTING_KEY,
@@ -104,7 +103,7 @@ def analysis_completed_event() -> dict:
     return {
         "eventId": "event-123",
         "eventType": "AnalysisCompleted",
-        "eventVersion": 1,
+        "eventVersion": 2,
         "occurredAt": "2026-07-04T10:00:00+00:00",
         "correlationId": "correlation-123",
         "payload": {

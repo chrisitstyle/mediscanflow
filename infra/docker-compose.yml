@@ -193,6 +193,8 @@ services:
       MINIO_SECURE: ${AI_MINIO_SECURE:-false}
 
       MODEL_PATH: ${MODEL_PATH:-models/yolov8n-brain-tumor.pt}
+      MODEL_NAME: ${MODEL_NAME:-yolo-brain-tumor-detector}
+      MODEL_VERSION: ${MODEL_VERSION:-yolov8n}
       YOLO_CONFIDENCE_THRESHOLD: ${YOLO_CONFIDENCE_THRESHOLD:-0.25}
       SIMULATE_INFERENCE_FAILURE: ${SIMULATE_INFERENCE_FAILURE:-false}
       YOLO_CONFIG_DIR: ${YOLO_CONFIG_DIR:-/tmp/Ultralytics}

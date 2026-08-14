@@ -71,8 +71,6 @@ public class Analysis {
         this.objectKey = input.objectKey();
         this.contentType = input.contentType();
         this.fileSizeBytes = input.fileSizeBytes();
-        this.modelName = input.modelName();
-        this.modelVersion = input.modelVersion();
         this.createdAt = createdAt;
     }
 
@@ -158,6 +156,8 @@ public class Analysis {
 
     public void retry() {
         this.status = AnalysisStatus.QUEUED;
+        this.modelName = null;
+        this.modelVersion = null;
         this.errorMessage = null;
         this.completedAt = null;
         this.resultObjectKey = null;

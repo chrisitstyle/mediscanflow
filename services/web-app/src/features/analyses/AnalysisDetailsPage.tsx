@@ -300,7 +300,9 @@ export function AnalysisDetailsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Metadata</CardTitle>
-              <CardDescription>Analysis request details.</CardDescription>
+              <CardDescription>
+                Analysis metadata and processing details.
+              </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4 text-sm">
@@ -313,10 +315,13 @@ export function AnalysisDetailsPage() {
                 value={formatFileSize(analysis.fileSizeBytes)}
               />
               <MetadataRow label="Content type" value={analysis.contentType} />
-              <MetadataRow label="Model" value={analysis.modelName} />
+              <MetadataRow
+                label="Model"
+                value={analysis.modelName ?? "Pending"}
+              />
               <MetadataRow
                 label="Model version"
-                value={analysis.modelVersion}
+                value={analysis.modelVersion ?? "Pending"}
               />
               <MetadataRow
                 label="Created"

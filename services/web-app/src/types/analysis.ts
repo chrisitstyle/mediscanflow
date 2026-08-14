@@ -25,8 +25,8 @@ export type Analysis = {
   resultImageUrl: string | null;
   contentType: string;
   fileSizeBytes: number;
-  modelName: string;
-  modelVersion: string;
+  modelName: string | null;
+  modelVersion: string | null;
   errorMessage: string | null;
   createdAt: string;
   completedAt: string | null;

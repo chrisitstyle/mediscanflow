@@ -25,16 +25,11 @@ class AnalysisController {
     @ResponseStatus(HttpStatus.CREATED)
     AnalysisResponseDTO create(
             @PathVariable UUID patientId,
-            @RequestPart("file") MultipartFile file,
-            @RequestParam(defaultValue = "yolo-brain-tumor-detector") String modelName,
-            @RequestParam(defaultValue = "yolov8n") String modelVersion
+            @RequestPart("file") MultipartFile file
     ) {
         return analysisCreationService.create(
                 patientId,
-                file,
-                modelName,
-                modelVersion
-        );
+                file);
     }
 
     @GetMapping("/analyses/recent")

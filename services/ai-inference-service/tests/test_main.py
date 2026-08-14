@@ -3,7 +3,6 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 import main as main_module
-
 from main import handle_message, routing_key_for
 from messaging import (
     ANALYSIS_COMPLETED_ROUTING_KEY,
@@ -125,7 +124,9 @@ def test_handle_message_nacks_with_requeue_when_publish_fails(monkeypatch) -> No
     channel.basic_ack.assert_not_called()
 
 
-def test_handle_message_nacks_with_requeue_when_processing_status_is_unsupported() -> None:
+def test_handle_message_nacks_with_requeue_when_processing_status_is_unsupported() -> (
+    None
+):
     channel = Mock()
     method = SimpleNamespace(delivery_tag="delivery-123")
     requested_event = analysis_requested_event()
@@ -165,7 +166,7 @@ def analysis_requested_event() -> dict:
     return {
         "eventId": "event-123",
         "eventType": "AnalysisRequested",
-        "eventVersion": 1,
+        "eventVersion": 2,
         "occurredAt": "2026-07-04T10:00:00+00:00",
         "correlationId": "correlation-123",
         "payload": {
@@ -182,7 +183,7 @@ def analysis_completed_event() -> dict:
     return {
         "eventId": "event-456",
         "eventType": "AnalysisCompleted",
-        "eventVersion": 1,
+        "eventVersion": 2,
         "occurredAt": "2026-07-04T10:01:00+00:00",
         "correlationId": "correlation-123",
         "payload": {

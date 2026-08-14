@@ -42,9 +42,7 @@ public class AnalysisCreationService {
     @Transactional
     public AnalysisResponseDTO create(
             UUID patientId,
-            MultipartFile file,
-            String modelName,
-            String modelVersion) {
+            MultipartFile file) {
         fileUploadValidator.validateImageFile(file);
 
         Patient patient = findPatientOrThrow(patientId);
@@ -62,10 +60,7 @@ public class AnalysisCreationService {
                     analysisId,
                     patient,
                     file,
-                    objectKey,
-                    modelName,
-                    modelVersion
-            );
+                    objectKey);
 
             Analysis savedAnalysis = saveAnalysis(analysis);
 
@@ -97,18 +92,12 @@ public class AnalysisCreationService {
             UUID analysisId,
             Patient patient,
             MultipartFile file,
-            String objectKey,
-            String modelName,
-            String modelVersion
-    ) {
+            String objectKey) {
         AnalysisInput analysisInput = new AnalysisInput(
                 file.getOriginalFilename(),
                 objectKey,
                 file.getContentType(),
-                file.getSize(),
-                modelName,
-                modelVersion
-        );
+                file.getSize());
 
         return Analysis.queued(
                 analysisId,
