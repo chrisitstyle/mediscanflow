@@ -1,6 +1,10 @@
 from datetime import datetime
 
-from events import build_completed_event, build_failed_event
+from events import (
+    build_completed_event,
+    build_failed_event,
+    build_processing_started_event,
+)
 from messaging_contracts import AnalysisDetection, AnalysisRequestedEvent
 
 ANALYSIS_ID = "4ce0289a-2c6e-4fa1-8941-bac2cdf3bd24"
@@ -15,6 +19,20 @@ MODEL_VERSION = "yolov8n"
 
 INPUT_OBJECT_KEY = f"analyses/{ANALYSIS_ID}/brain-scan.jpg"
 RESULT_OBJECT_KEY = f"analyses/{ANALYSIS_ID}/result.jpg"
+
+
+def test_build_processing_started_event_creates_analysis_processing_started_event() -> (
+    None
+):
+    requested_event = analysis_requested_event()
+
+    event = build_processing_started_event(requested_event)
+
+    assert event.event_type == "AnalysisProcessingStarted"
+    assert event.event_version == 1
+    assert event.correlation_id == requested_event.correlation_id
+    assert event.payload.analysis_id == requested_event.payload.analysis_id
+    assert event.payload.attempt_id == requested_event.payload.attempt_id
 
 
 def test_build_completed_event_creates_analysis_completed_event() -> None:

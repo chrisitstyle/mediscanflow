@@ -32,6 +32,26 @@ public class AnalysisLifecycleService {
     private final AnalysisMapper analysisMapper;
     private final OutboxEventService outboxEventService;
 
+
+    @Transactional
+    public void startProcessing(
+            UUID analysisId,
+            UUID attemptId) {
+        Analysis analysis = findAnalysisOrThrow(analysisId);
+
+        if (!analysis.isCurrentProcessingAttempt(attemptId)) {
+            log.info(
+                    "Ignoring stale AnalysisProcessingStarted event. "
+                            + "analysisId={}, attemptId={}, currentAttemptId={}",
+                    analysisId,
+                    attemptId,
+                    analysis.getProcessingAttemptId());
+            return;
+        }
+
+        analysis.startProcessing();
+    }
+
     @Transactional
     public AnalysisResponseDTO retryAnalysis(UUID analysisId) {
         Analysis analysis = findAnalysisForRetryOrThrow(analysisId);

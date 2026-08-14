@@ -31,6 +31,20 @@ class AnalysisRequestedEvent(MessagingContract):
     payload: AnalysisRequestedPayload
 
 
+class AnalysisProcessingStartedPayload(MessagingContract):
+    analysis_id: UUID
+    attempt_id: UUID
+
+
+class AnalysisProcessingStartedEvent(MessagingContract):
+    event_id: UUID
+    event_type: Literal["AnalysisProcessingStarted"]
+    event_version: Literal[1]
+    occurred_at: datetime
+    correlation_id: UUID
+    payload: AnalysisProcessingStartedPayload
+
+
 class AnalysisDetection(MessagingContract):
     label: str
     confidence: float

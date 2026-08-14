@@ -8,6 +8,8 @@ from messaging import (
     ANALYSIS_EXCHANGE,
     ANALYSIS_FAILED_QUEUE,
     ANALYSIS_FAILED_ROUTING_KEY,
+    ANALYSIS_PROCESSING_STARTED_QUEUE,
+    ANALYSIS_PROCESSING_STARTED_ROUTING_KEY,
     ANALYSIS_REQUESTED_QUEUE,
     ANALYSIS_REQUESTED_ROUTING_KEY,
     configure_rabbitmq,
@@ -43,6 +45,7 @@ def test_configure_rabbitmq_declares_exchange_queues_bindings_and_confirms() -> 
     channel.queue_declare.assert_has_calls(
         [
             call(queue=ANALYSIS_REQUESTED_QUEUE, durable=True),
+            call(queue=ANALYSIS_PROCESSING_STARTED_QUEUE, durable=True),
             call(queue=ANALYSIS_COMPLETED_QUEUE, durable=True),
             call(queue=ANALYSIS_FAILED_QUEUE, durable=True),
         ]
@@ -54,6 +57,11 @@ def test_configure_rabbitmq_declares_exchange_queues_bindings_and_confirms() -> 
                 queue=ANALYSIS_REQUESTED_QUEUE,
                 exchange=ANALYSIS_EXCHANGE,
                 routing_key=ANALYSIS_REQUESTED_ROUTING_KEY,
+            ),
+            call(
+                queue=ANALYSIS_PROCESSING_STARTED_QUEUE,
+                exchange=ANALYSIS_EXCHANGE,
+                routing_key=ANALYSIS_PROCESSING_STARTED_ROUTING_KEY,
             ),
             call(
                 queue=ANALYSIS_COMPLETED_QUEUE,

@@ -20,16 +20,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AnalysisMessagingContractTest {
 
     private static final String ANALYSIS_REQUESTED_SCHEMA = "messaging/analysis-requested.schema.json";
-
     private static final String ANALYSIS_COMPLETED_SCHEMA = "messaging/analysis-completed.schema.json";
-
     private static final String ANALYSIS_FAILED_SCHEMA = "messaging/analysis-failed.schema.json";
-
     private static final String MODEL_NAME = "yolo-brain-tumor-detector";
-
     private static final String MODEL_VERSION = "yolov8n";
-
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Test
+    void analysisProcessingStartedEventMatchesSchema() throws Exception {
+        UUID analysisId = UUID.randomUUID();
+        UUID attemptId = UUID.randomUUID();
+
+        AnalysisProcessingStartedEvent event = new AnalysisProcessingStartedEvent(
+                        UUID.randomUUID(),
+                        AnalysisProcessingStartedEvent.TYPE,
+                        AnalysisProcessingStartedEvent.VERSION,
+                        Instant.now(),
+                        UUID.randomUUID(),
+                        new AnalysisProcessingStartedPayload(
+                                analysisId,
+                                attemptId));
+
+        assertMatchesSchema(event,
+                "messaging/analysis-processing-started.schema.json");
+    }
 
     @Test
     void analysisRequestedEventMatchesSchema() throws Exception {

@@ -7,10 +7,13 @@ from main import handle_message, routing_key_for
 from messaging import (
     ANALYSIS_COMPLETED_ROUTING_KEY,
     ANALYSIS_FAILED_ROUTING_KEY,
+    ANALYSIS_PROCESSING_STARTED_ROUTING_KEY,
 )
 from messaging_contracts import (
     AnalysisCompletedEvent,
     AnalysisCompletedPayload,
+    AnalysisProcessingStartedEvent,
+    AnalysisProcessingStartedPayload,
     AnalysisRequestedEvent,
     AnalysisResultEvent,
 )
@@ -52,13 +55,14 @@ def test_routing_key_for_unsupported_status() -> None:
         raise AssertionError("Expected ValueError")
 
 
-def test_handle_message_publishes_event_and_acknowledges_message(
+def test_handle_message_publishes_processing_started_and_result_event_and_acknowledges_message(
     monkeypatch,
 ) -> None:
     channel = Mock()
     method = SimpleNamespace(delivery_tag="delivery-123")
 
     requested_event = analysis_requested_event()
+    processing_started_event = analysis_processing_started_event()
     completed_event = analysis_completed_event()
 
     processor = FakeProcessor(
@@ -67,6 +71,12 @@ def test_handle_message_publishes_event_and_acknowledges_message(
     )
 
     publish_calls = []
+
+    monkeypatch.setattr(
+        main_module,
+        "build_processing_started_event",
+        lambda _requested_event: processing_started_event,
+    )
 
     def fake_publish_event(**kwargs):
         publish_calls.append(kwargs)
@@ -91,13 +101,57 @@ def test_handle_message_publishes_event_and_acknowledges_message(
     assert publish_calls == [
         {
             "channel": channel,
+            "routing_key": ANALYSIS_PROCESSING_STARTED_ROUTING_KEY,
+            "event": processing_started_event,
+        },
+        {
+            "channel": channel,
             "routing_key": ANALYSIS_COMPLETED_ROUTING_KEY,
             "event": completed_event,
-        }
+        },
     ]
 
     channel.basic_ack.assert_called_once_with(delivery_tag="delivery-123")
     channel.basic_nack.assert_not_called()
+
+
+def test_handle_message_does_not_process_when_processing_started_publish_fails(
+    monkeypatch,
+) -> None:
+    channel = Mock()
+    method = SimpleNamespace(delivery_tag="delivery-123")
+
+    requested_event = analysis_requested_event()
+
+    processor = FakeProcessor(
+        status=ProcessingStatus.COMPLETED,
+        event=analysis_completed_event(),
+    )
+
+    def fake_publish_event(**kwargs):
+        if kwargs["routing_key"] == ANALYSIS_PROCESSING_STARTED_ROUTING_KEY:
+            raise RuntimeError("RabbitMQ publish failed")
+
+    monkeypatch.setattr(
+        main_module,
+        "publish_event",
+        fake_publish_event,
+    )
+
+    handle_message(
+        channel=channel,
+        method=method,
+        body=json.dumps(requested_event).encode("utf-8"),
+        processor=processor,
+    )
+
+    assert processor.received_event is None
+
+    channel.basic_nack.assert_called_once_with(
+        delivery_tag="delivery-123",
+        requeue=True,
+    )
+    channel.basic_ack.assert_not_called()
 
 
 def test_handle_message_rejects_invalid_json_without_requeue() -> None:
@@ -265,5 +319,19 @@ def analysis_completed_event() -> AnalysisCompletedEvent:
             model_version=MODEL_VERSION,
             result_object_key=RESULT_OBJECT_KEY,
             detections=[],
+        ),
+    )
+
+
+def analysis_processing_started_event() -> AnalysisProcessingStartedEvent:
+    return AnalysisProcessingStartedEvent(
+        event_id="44444444-4444-4444-8444-444444444444",
+        event_type="AnalysisProcessingStarted",
+        event_version=1,
+        occurred_at="2026-07-04T10:00:01+00:00",
+        correlation_id=CORRELATION_ID,
+        payload=AnalysisProcessingStartedPayload(
+            analysis_id=ANALYSIS_ID,
+            attempt_id=ATTEMPT_ID,
         ),
     )

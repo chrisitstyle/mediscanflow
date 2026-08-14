@@ -50,6 +50,18 @@ export function PatientDetailsPage() {
     queryKey: queryKeys.patients.analyses(patientId),
     queryFn: () => getPatientAnalyses(patientId),
     enabled: !!patientId,
+    refetchInterval: (query) => {
+      const analyses = query.state.data;
+
+      const hasActiveAnalysis = analyses?.some(
+        (analysis) =>
+          analysis.status === "UPLOADED" ||
+          analysis.status === "QUEUED" ||
+          analysis.status === "PROCESSING",
+      );
+
+      return hasActiveAnalysis ? 3_000 : false;
+    },
   });
 
   const archiveMutation = useMutation({

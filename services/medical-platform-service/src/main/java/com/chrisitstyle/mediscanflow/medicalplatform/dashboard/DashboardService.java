@@ -28,6 +28,7 @@ class DashboardService {
         long patientsCount = patientRepository.count();
         long analysesCount = analysisRepository.count();
         long queuedAnalysesCount = analysisRepository.countByStatus(AnalysisStatus.QUEUED);
+        long processingAnalysesCount = analysisRepository.countByStatus(AnalysisStatus.PROCESSING);
         long completedAnalysesCount = analysisRepository.countByStatus(AnalysisStatus.COMPLETED);
         long failedAnalysesCount = analysisRepository.countByStatus(AnalysisStatus.FAILED);
 
@@ -35,6 +36,7 @@ class DashboardService {
                 patientsCount,
                 analysesCount,
                 queuedAnalysesCount,
+                processingAnalysesCount,
                 completedAnalysesCount,
                 failedAnalysesCount
         );

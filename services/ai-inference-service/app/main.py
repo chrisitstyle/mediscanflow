@@ -6,10 +6,12 @@ from config import (
     get_model_settings,
     get_rabbitmq_settings,
 )
+from events import build_processing_started_event
 from inference import load_yolo_model
 from messaging import (
     ANALYSIS_COMPLETED_ROUTING_KEY,
     ANALYSIS_FAILED_ROUTING_KEY,
+    ANALYSIS_PROCESSING_STARTED_ROUTING_KEY,
     ANALYSIS_REQUESTED_QUEUE,
     configure_rabbitmq,
     create_rabbitmq_connection,
@@ -41,6 +43,20 @@ def handle_message(
         raw_event = json.loads(body.decode("utf-8"))
 
         requested_event = AnalysisRequestedEvent.model_validate(raw_event)
+
+        processing_started_event = build_processing_started_event(requested_event)
+
+        publish_event(
+            channel=channel,
+            routing_key=ANALYSIS_PROCESSING_STARTED_ROUTING_KEY,
+            event=processing_started_event,
+        )
+
+        logger.info(
+            "Published %s event for analysisId=%s",
+            processing_started_event.event_type,
+            processing_started_event.payload.analysis_id,
+        )
 
         processing_status, event = processor.process(requested_event)
         routing_key = routing_key_for(processing_status)

@@ -118,7 +118,11 @@ export function RecentAnalysesCard() {
                     />
                     <MobileMetaRow
                       label="Model"
-                      value={`${analysis.modelName} / ${analysis.modelVersion}`}
+                      value={
+                        analysis.modelName && analysis.modelVersion
+                          ? `${analysis.modelName} / ${analysis.modelVersion}`
+                          : "Pending"
+                      }
                     />
                     <MobileMetaRow
                       label="Created"
@@ -177,10 +181,18 @@ export function RecentAnalysesCard() {
                       </TableCell>
 
                       <TableCell>
-                        <div className="text-sm">{analysis.modelName}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {analysis.modelVersion}
-                        </div>
+                        {analysis.modelName && analysis.modelVersion ? (
+                          <>
+                            <div className="text-sm">{analysis.modelName}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {analysis.modelVersion}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">
+                            Pending
+                          </span>
+                        )}
                       </TableCell>
 
                       <TableCell>
@@ -209,7 +221,7 @@ type MobileMetaRowProps = {
   value: React.ReactNode;
 };
 
-function MobileMetaRow({ label, value }: MobileMetaRowProps) {
+function MobileMetaRow({ label, value }: Readonly<MobileMetaRowProps>) {
   return (
     <div className="flex items-start justify-between gap-4">
       <span className="text-muted-foreground">{label}</span>

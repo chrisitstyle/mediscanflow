@@ -2,6 +2,7 @@ export type DashboardSummary = {
   patientsCount: number;
   analysesCount: number;
   queuedAnalysesCount: number;
+  processingAnalysesCount: number;
   completedAnalysesCount: number;
   failedAnalysesCount: number;
 };

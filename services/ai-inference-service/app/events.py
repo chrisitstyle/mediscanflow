@@ -7,12 +7,30 @@ from messaging_contracts import (
     AnalysisDetection,
     AnalysisFailedEvent,
     AnalysisFailedPayload,
+    AnalysisProcessingStartedEvent,
+    AnalysisProcessingStartedPayload,
     AnalysisRequestedEvent,
 )
 
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def build_processing_started_event(
+    requested_event: AnalysisRequestedEvent,
+) -> AnalysisProcessingStartedEvent:
+    return AnalysisProcessingStartedEvent(
+        event_id=uuid4(),
+        event_type="AnalysisProcessingStarted",
+        event_version=1,
+        occurred_at=utc_now(),
+        correlation_id=requested_event.correlation_id,
+        payload=AnalysisProcessingStartedPayload(
+            analysis_id=requested_event.payload.analysis_id,
+            attempt_id=requested_event.payload.attempt_id,
+        ),
+    )
 
 
 def build_completed_event(
